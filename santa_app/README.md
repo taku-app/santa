@@ -22,7 +22,6 @@ Next.js (App Router) + TypeScript + Tailwind を使った名古屋限定のク�
    ```bash
    npm run dev
    ```
-
    http://localhost:3000 にアクセスするとランディングページと認証フォームのモックが表示されます。
 
 ## 実装済みの要素
