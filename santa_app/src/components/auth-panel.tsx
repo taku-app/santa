@@ -1,60 +1,57 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
 
-import { supabaseBrowserClient } from "@/lib/supabase-browser";
+import { useSupabaseSession } from "@/hooks/use-supabase-session";
 
 type AuthMode = "signIn" | "signUp";
+
+type Props = {
+  onAuthSuccess?: () => void;
+};
 
 const buttonCopy: Record<AuthMode, string> = {
   signIn: "ログイン",
   signUp: "アカウント作成",
 };
 
-export default function AuthPanel() {
-  const supabase = useMemo(() => supabaseBrowserClient(), []);
+export default function AuthPanel({ onAuthSuccess }: Props) {
+  const { session, supabase } = useSupabaseSession();
   const [mode, setMode] = useState<AuthMode>("signIn");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  const [profileName, setProfileName] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [status, setStatus] = useState<{ type: "idle" | "success" | "error"; message?: string }>({
     type: "idle",
     message: undefined,
   });
-  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (isMounted) {
-        setSession(data.session ?? null);
-      }
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      if (isMounted) {
-        setSession(currentSession);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      listener.subscription.unsubscribe();
-    };
-  }, [supabase]);
+    setProfileName(session?.user.user_metadata?.username ?? "");
+  }, [session]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
+    setAuthLoading(true);
     setStatus({ type: "idle" });
 
     try {
       if (mode === "signUp") {
+        const trimmed = username.trim();
+        if (!trimmed) {
+          throw new Error("ユーザー名を入力してください。");
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              username: trimmed,
+            },
+          },
         });
         if (error) throw error;
         setStatus({
@@ -71,6 +68,7 @@ export default function AuthPanel() {
           type: "success",
           message: "ようこそ！スポット実績の同期を開始します。",
         });
+        onAuthSuccess?.();
       }
     } catch (error) {
       setStatus({
@@ -78,12 +76,37 @@ export default function AuthPanel() {
         message: error instanceof Error ? error.message : "認証エラーが発生しました。",
       });
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleUsernameUpdate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session) return;
+    setProfileLoading(true);
+    setStatus({ type: "idle" });
+    try {
+      const trimmed = profileName.trim();
+      if (!trimmed) {
+        throw new Error("ユーザー名を入力してください。");
+      }
+      const { error } = await supabase.auth.updateUser({
+        data: { username: trimmed },
+      });
+      if (error) throw error;
+      setStatus({ type: "success", message: "ユーザー名を更新しました。" });
+    } catch (error) {
+      setStatus({
+        type: "error",
+        message: error instanceof Error ? error.message : "ユーザー名の更新に失敗しました。",
+      });
+    } finally {
+      setProfileLoading(false);
     }
   }
 
   async function handleSignOut() {
-    setLoading(true);
+    setAuthLoading(true);
     setStatus({ type: "idle" });
     try {
       const { error } = await supabase.auth.signOut();
@@ -95,7 +118,7 @@ export default function AuthPanel() {
         message: error instanceof Error ? error.message : "ログアウトに失敗しました。",
       });
     } finally {
-      setLoading(false);
+      setAuthLoading(false);
     }
   }
 
@@ -121,11 +144,30 @@ export default function AuthPanel() {
           <p className="font-semibold">ログイン済み</p>
           <p className="mt-1 text-emerald-800">{session.user.email}</p>
           <p className="mt-2 text-xs uppercase tracking-widest text-emerald-500">実績同期モード</p>
+          <form onSubmit={handleUsernameUpdate} className="mt-4 space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">
+              ユーザー名
+            </label>
+            <input
+              type="text"
+              value={profileName}
+              onChange={(event) => setProfileName(event.target.value)}
+              placeholder="Nagoya Santa"
+              className="w-full rounded-2xl border border-emerald-200 bg-white/90 px-4 py-2 text-sm text-emerald-800 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            />
+            <button
+              type="submit"
+              disabled={profileLoading}
+              className="w-full rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {profileLoading ? "保存中..." : "ユーザー名を保存"}
+            </button>
+          </form>
           <button
             type="button"
             onClick={handleSignOut}
-            disabled={loading}
-            className="mt-4 w-full rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+            disabled={authLoading}
+            className="mt-4 w-full rounded-full bg-emerald-900/80 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-900 disabled:opacity-50"
           >
             ログアウト
           </button>
@@ -145,6 +187,21 @@ export default function AuthPanel() {
               className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white/80 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
             />
           </div>
+          {mode === "signUp" && (
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
+                ユーザー名
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                required={mode === "signUp"}
+                placeholder="Nagoya Santa"
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white/80 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+              />
+            </div>
+          )}
           <div>
             <label className="text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500">
               Password
@@ -161,10 +218,10 @@ export default function AuthPanel() {
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={authLoading}
             className="w-full rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 disabled:opacity-50"
           >
-            {loading ? "処理中..." : buttonCopy[mode]}
+            {authLoading ? "処理中..." : buttonCopy[mode]}
           </button>
           <p className="text-center text-xs text-zinc-500">
             後日Google/Appleでのソーシャルログインも追加予定です。

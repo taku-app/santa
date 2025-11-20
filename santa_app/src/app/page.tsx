@@ -1,4 +1,9 @@
+'use client';
+
+import { useState } from "react";
+
 import AuthPanel from "@/components/auth-panel";
+import FooterStatus from "@/components/footer-status";
 
 const heroStats = [
   { label: "名古屋スポット", value: "6" },
@@ -46,7 +51,7 @@ const faqs = [
   },
   {
     q: "プレミアム課金はいつ実装されますか？",
-    a: "初期リリースではUIモックとして表示され、予約購入ボタンからストライプページに遷移予定です。",
+    a: "初期リリースではUIモックとして表示され、予約購入ボタンから外部の決済ページに遷移予定です。",
   },
   {
     q: "サンタARはどのブラウザで使えますか？",
@@ -55,9 +60,48 @@ const faqs = [
 ];
 
 export default function Home() {
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-rose-50/60 text-zinc-900">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.2),_transparent_55%)]" />
+      {isLoginOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
+          <div className="relative w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+            <button
+              type="button"
+              onClick={() => setIsLoginOpen(false)}
+              className="absolute right-4 top-4 rounded-full border border-zinc-200 p-2 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500 transition hover:bg-zinc-50"
+              aria-label="閉じる"
+            >
+              ✕
+            </button>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">
+              Account Access
+            </p>
+            <h2 className="mt-2 text-2xl font-bold text-zinc-900">メールログイン / 新規登録</h2>
+            <p className="mt-2 text-sm text-zinc-600">
+              ユーザー名を登録すると、実績リーダーボードやフッターに表示されます。
+            </p>
+            <div className="mt-6">
+              <AuthPanel onAuthSuccess={() => setIsLoginOpen(false)} />
+            </div>
+          </div>
+        </div>
+      )}
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-10 lg:px-12">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Santa Quest</p>
+          <p className="text-lg font-bold text-zinc-900">Nagoya AR Journey</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsLoginOpen(true)}
+          className="rounded-full border border-rose-200 bg-white/80 px-6 py-2 text-sm font-semibold text-rose-500 shadow-lg shadow-rose-100 transition hover:bg-rose-50"
+        >
+          ログイン
+        </button>
+      </header>
       <main className="mx-auto flex max-w-6xl flex-col gap-24 px-6 py-16 sm:px-10 lg:px-12">
         <section className="rounded-3xl bg-gradient-to-br from-rose-100 via-white to-emerald-50 p-10 shadow-xl ring-1 ring-white/60 lg:p-16">
           <div className="grid items-center gap-10 lg:grid-cols-[3fr,2fr]">
@@ -74,12 +118,13 @@ export default function Home() {
                 位置情報を元に名古屋の代表スポットをチェックイン。5つ以上の実績を解放すると、Webブラウザでカメラを起動し、ARサンタや限定トナカイとフォト撮影ができます。
               </p>
               <div className="flex flex-wrap gap-4">
-                <a
-                  href="#login"
+                <button
+                  type="button"
+                  onClick={() => setIsLoginOpen(true)}
                   className="rounded-full bg-rose-500 px-8 py-3 text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
                 >
-                  Supabaseログイン
-                </a>
+                  メールでログイン
+                </button>
                 <a
                   href="#spots"
                   className="rounded-full border border-rose-500/50 px-8 py-3 text-rose-500 transition hover:bg-rose-100"
@@ -169,9 +214,9 @@ export default function Home() {
             <p className="mt-4 text-3xl font-bold text-zinc-900">
               500円でプレミアムサンタと<span className="text-rose-500">トナカイAR</span>撮影を解放。
             </p>
-            <p className="mt-4 text-zinc-600">
-              決済ボタンからStripeに遷移するUIモックを先に実装。決済完了後にアカウントへ「Premium」タグを付与する設計を想定しています。
-            </p>
+              <p className="mt-4 text-zinc-600">
+                決済ボタンから外部のチェックアウトページに遷移するUIモックを先に実装。決済完了後にアカウントへ「Premium」タグを付与する設計を想定しています。
+              </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-zinc-100 bg-white/80 p-6">
                 <h3 className="text-lg font-semibold">Free</h3>
@@ -192,7 +237,7 @@ export default function Home() {
                   <li>・優先サポート</li>
                 </ul>
                 <button className="mt-6 w-full rounded-full bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-rose-200">
-                  Stripe決済モック
+                  決済ページモック
                 </button>
               </div>
             </div>
@@ -207,7 +252,7 @@ export default function Home() {
               </p>
               <h2 className="mt-2 text-3xl font-bold text-zinc-900">街に散らばるスポット実績</h2>
               <p className="mt-2 text-zinc-600">
-                後続ではSupabaseからスポット情報を取得予定。ひとまずモックデータでカードを表示します。
+                後続ではバックエンドからスポット情報を取得予定。ひとまずモックデータでカードを表示します。
               </p>
             </div>
             <div className="rounded-full border border-rose-200 bg-rose-50/80 px-6 py-3 text-sm font-semibold text-rose-500">
@@ -235,7 +280,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="grid gap-10 lg:grid-cols-[2fr,1fr]" id="login">
+        <section className="grid gap-10 lg:grid-cols-[2fr,1fr]" id="access">
           <div className="rounded-3xl bg-gradient-to-br from-emerald-50 to-white p-8 shadow-lg ring-1 ring-emerald-100">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-400">
               Camera Unlock
@@ -244,7 +289,7 @@ export default function Home() {
               5箇所以上でサンタARを開放。無料でもツリー撮影OK。
             </h2>
             <p className="mt-3 text-zinc-600">
-              ログイン後はSupabaseのプロフィールに実績数を保存。カメラUIはProgressive Web Appとして提供予定です。
+              ログイン後はクラウド上のプロフィールに実績数を保存。カメラUIはProgressive Web Appとして提供予定です。
             </p>
             <div className="mt-6 grid gap-6 md:grid-cols-2">
               <div className="rounded-2xl border border-zinc-100 bg-white/80 p-5">
@@ -262,13 +307,20 @@ export default function Home() {
             </div>
           </div>
           <div className="rounded-3xl border border-rose-100 bg-white/80 p-8 shadow-lg">
-            <h2 className="text-xl font-semibold text-zinc-900">Supabaseログイン</h2>
+            <h2 className="text-xl font-semibold text-zinc-900">ログインポータル</h2>
             <p className="mt-2 text-sm text-zinc-600">
-              メール＋パスワードでサインアップ。後からソーシャル連携を追加予定です。
+              メール＋パスワードに加えて、ユーザー名を登録するとスポットランキングに表示されます。
             </p>
-            <div className="mt-6">
-              <AuthPanel />
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsLoginOpen(true)}
+              className="mt-6 w-full rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
+            >
+              ログイン / 新規登録モーダルを開く
+            </button>
+            <p className="mt-3 text-xs text-zinc-500">
+              モーダルからプロフィール名の変更やログアウトも実行できます。
+            </p>
           </div>
         </section>
 
@@ -282,6 +334,7 @@ export default function Home() {
             ))}
           </div>
         </section>
+        <FooterStatus onLoginClick={() => setIsLoginOpen(true)} />
       </main>
     </div>
   );
