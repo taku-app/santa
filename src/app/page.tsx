@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import { useState } from "react";
 
 import AuthPanel from "@/components/auth-panel";
@@ -28,9 +29,9 @@ const nagoyaSpots = [
     badge: "和装サンタ",
   },
   {
-    name: "熱田神宮",
-    description: "静かな森の中で音声ガイドを解放。参拝フォトが残せる。",
-    badge: "聖夜の祈り",
+    name: "大名古屋ビルヂング",
+    description: "スカイガーデンで夜景を撮影。高層ARのきらめきをコレクション。",
+    badge: "スカイリフト",
   },
   {
     name: "名古屋港ガーデンふ頭",
@@ -225,6 +226,12 @@ export default function Home() {
                   <li>・スポット履歴保存</li>
                   <li>・メール認証</li>
                 </ul>
+                <Link
+                  href="/game"
+                  className="mt-6 inline-flex w-full items-center justify-center rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-500 transition hover:bg-rose-50"
+                >
+                  実績チェックへ
+                </Link>
               </div>
               <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6">
                 <div className="inline-flex rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-500">

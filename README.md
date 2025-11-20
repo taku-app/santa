@@ -1,6 +1,6 @@
 # Santa Quest Nagoya
 
-Next.js (App Router) + TypeScript + Tailwind を使った名古屋限定のクリスマスAR体験アプリのLPです。Supabase のメール + パスワード認証を先に実装し、後日ソーシャルログインやStripe決済を拡張できる構成になっています。
+Next.js (App Router) + TypeScript + Tailwind を使った名古屋限定のクリスマスAR体験アプリのLPです。Supabase のメール + パスワード認証を先に実装し、後日ソーシャルログインやStripe決済を拡張できる構成になっています。無料枠のボタンからは位置情報ベースの実績ゲームページへ遷移できます。
 
 ## セットアップ
 
@@ -22,12 +22,14 @@ Next.js (App Router) + TypeScript + Tailwind を使った名古屋限定のク�
    ```bash
    npm run dev
    ```
-   http://localhost:3000 にアクセスするとランディングページと認証フォームのモックが表示されます。
+   http://localhost:3000 にアクセスするとランディングページと認証フォームのモックが表示されます。`/game` にアクセスすると簡易マップ＋実績解除モーダルをテストできます。
 
 ## 実装済みの要素
 
 - 名古屋のスポット実績とプレミアム課金（Stripe遷移）のUIモック
 - 5スポット制覇でサンタARが解放される説明コンテンツ
+- `/game` で名古屋主要6スポット（ミッドランドスクエア、オアシス21、名古屋城、大名古屋ビルヂング、名古屋港ガーデンふ頭、大須商店街）それぞれの50m圏内判定と簡易スタンプマップ
+- 実績解除結果を伝えるモーダル（`src/components/achievement-modal.tsx`）
 - Supabase Browser Client のセットアップ `src/lib/supabase-browser.ts`
 - メール + パスワードのサインイン / サインアップ / サインアウト UI（`src/components/auth-panel.tsx`）
   - 認証状態に応じてフォームとログアウトカードを切り替え
