@@ -259,9 +259,9 @@ export default function GamePage() {
         <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Field Game</p>
-            <h1 className="text-3xl font-bold">ミッドランドスクエア チェックイン</h1>
+            <h1 className="text-3xl font-bold">スポット チェックイン</h1>
             <p className="mt-1 text-sm text-zinc-500">
-              現在地を確認して、50m四方のゾーンに入ると「ツリー煌き実績」を解除できます。
+              現在地を確認して、50m圏内の近くにあるスポットの実績を解除できます。
             </p>
           </div>
           <div className="flex gap-3">
