@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import AchievementModal from "@/components/achievement-modal";
@@ -117,12 +117,22 @@ export default function GamePage() {
     unlocked: boolean;
     distance?: number;
   } | null>(null);
+  const [arStage, setArStage] = useState<"hidden" | "celebration" | "camera">("hidden");
+  const [hasTriggeredArIntro, setHasTriggeredArIntro] = useState(false);
 
   const achievements = baseAchievements.map((item) => ({
     ...item,
     unlocked: unlockedMap[item.id] ?? false,
   }));
   const unlockedCount = achievements.filter((ach) => ach.unlocked).length;
+  const firstUnlocked = achievements.find((ach) => ach.unlocked);
+
+  useEffect(() => {
+    if (arStage === "celebration") {
+      const timer = window.setTimeout(() => setArStage("camera"), 2500);
+      return () => window.clearTimeout(timer);
+    }
+  }, [arStage]);
 
   function handleCheckLocation() {
     if (!("geolocation" in navigator)) {
@@ -167,6 +177,10 @@ export default function GamePage() {
             unlocked: true,
             distance: unlockedNow[0].distance,
           });
+          if (!hasTriggeredArIntro) {
+            setHasTriggeredArIntro(true);
+            setArStage("celebration");
+          }
         } else {
           setStatus("error");
           setMessage(`${closest.spot.title} まで ${Math.round(closest.distance)}m`);
@@ -198,6 +212,69 @@ export default function GamePage() {
         distanceMeters={modalData?.distance}
         achievement={modalData?.achievement}
       />
+      {arStage !== "hidden" && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4 py-8 backdrop-blur-md">
+          {arStage === "celebration" ? (
+            <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-gradient-to-b from-rose-50 via-white to-amber-50 p-8 text-center shadow-2xl">
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.35),_transparent_70%)]" />
+              <p className="text-xs font-semibold uppercase tracking-[0.4em] text-rose-400">Achievement</p>
+              <h2 className="mt-4 text-3xl font-bold text-rose-600">実績解除おめでとう！</h2>
+              <p className="mt-3 text-sm text-zinc-600">
+                {firstUnlocked?.title ?? "新しい実績"} を開放しました。
+                <br />
+                ARカメラで可愛いキャラクターがあなたを祝福します。
+              </p>
+              <div className="mt-6 flex flex-col items-center gap-3">
+                <span className="inline-flex items-center gap-2 rounded-full bg-rose-500/10 px-5 py-2 text-xs font-semibold tracking-widest text-rose-500">
+                  <span className="h-2 w-2 animate-ping rounded-full bg-rose-500" />
+                  ARビュー準備中...
+                </span>
+                <p className="text-xs text-zinc-500">数秒後にARカメラ画面へ切り替わります。</p>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full max-w-2xl rounded-3xl bg-zinc-900/95 p-6 text-white shadow-[0_30px_80px_rgba(0,0,0,0.65)]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.4em] text-emerald-300">AR Camera</p>
+                  <h3 className="text-2xl font-bold text-white">ピコモモ現れた！</h3>
+                  <p className="mt-1 text-sm text-zinc-200">端末を動かしてキャラクターを探してみましょう。</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setArStage("hidden")}
+                  className="rounded-full border border-white/30 px-5 py-2 text-xs font-semibold tracking-[0.3em] text-white transition hover:bg-white/10"
+                >
+                  CLOSE
+                </button>
+              </div>
+              <div className="relative mt-6 h-96 overflow-hidden rounded-2xl border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.2),_rgba(0,0,0,0.8))]">
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:60px_60px]" />
+                <div className="pointer-events-none absolute inset-x-10 inset-y-12 border border-white/30" />
+                <div className="absolute left-1/2 top-1/2 h-48 w-40 -translate-x-1/2 -translate-y-1/2 rounded-[45%] bg-gradient-to-b from-rose-100 via-rose-300 to-rose-500 shadow-[0_10px_35px_rgba(244,114,182,0.6)]">
+                  <div className="absolute left-1/2 top-6 flex -translate-x-1/2 gap-5">
+                    <span className="h-4 w-4 rounded-full bg-white shadow-inner shadow-rose-400" />
+                    <span className="h-4 w-4 rounded-full bg-white shadow-inner shadow-rose-400" />
+                  </div>
+                  <div className="absolute left-1/2 top-16 -translate-x-1/2 text-3xl text-white">ᵔᴥᵔ</div>
+                  <div className="absolute inset-x-6 bottom-6 flex items-center justify-between text-xs text-white/80">
+                    <span>ピコモモ</span>
+                    <span className="rounded-full bg-white/20 px-2 py-1 text-[10px] uppercase tracking-widest">AR</span>
+                  </div>
+                </div>
+                <div className="absolute inset-0 animate-pulse bg-[radial-gradient(circle,_rgba(255,255,255,0.2),_transparent_60%)] opacity-20" />
+                <div className="absolute right-4 top-4 flex flex-col gap-2 text-[10px] text-white/70">
+                  <span className="rounded-full bg-black/40 px-3 py-1">Depth Lock</span>
+                  <span className="rounded-full bg-black/40 px-3 py-1">Light Boost</span>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-zinc-200">
+                実際のカメラ映像の上にキャラクターが合成される想定のモックです。周囲をスキャンして新しい演出を探してみてください。
+              </p>
+            </div>
+          )}
+        </div>
+      )}
       {isMenuOpen && (
         <div className="fixed inset-0 z-40 flex items-start justify-end bg-black/30 px-4 py-6 backdrop-blur-sm">
           <div className="h-full w-full max-w-md overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
@@ -388,6 +465,40 @@ export default function GamePage() {
                 />
               </div>
             </div>
+
+            {unlockedCount > 0 && (
+              <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-4 shadow-inner">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">AR Experience</p>
+                    <h3 className="text-lg font-bold text-zinc-900">ARキャラクターが待っています</h3>
+                    <p className="mt-1 text-sm text-zinc-600">
+                      最初の実績を解除したので、ARカメラでキャラクター「ピコモモ」を召喚できます。
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setArStage("camera")}
+                    className="rounded-full bg-rose-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
+                  >
+                    ARカメラを起動
+                  </button>
+                </div>
+                <div className="mt-4 h-36 overflow-hidden rounded-2xl border border-dashed border-rose-200 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900">
+                  <div className="relative h-full w-full">
+                    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
+                    <div className="absolute left-1/2 top-1/2 h-24 w-20 -translate-x-1/2 -translate-y-1/2 rounded-[45%] bg-gradient-to-b from-rose-200 to-rose-500 shadow-[0_8px_20px_rgba(244,114,182,0.45)]">
+                      <div className="absolute left-1/2 top-5 flex -translate-x-1/2 gap-3">
+                        <span className="h-3 w-3 rounded-full bg-white shadow-inner shadow-rose-400" />
+                        <span className="h-3 w-3 rounded-full bg-white shadow-inner shadow-rose-400" />
+                      </div>
+                      <div className="absolute left-1/2 top-12 -translate-x-1/2 text-xl text-white">^_^</div>
+                    </div>
+                    <div className="absolute inset-0 animate-pulse bg-[radial-gradient(circle,_rgba(255,255,255,0.15),_transparent_60%)] opacity-30" />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <p className="text-xs text-zinc-500">
               ブラウザの位置情報許可が必要です。精度の都合で100m以内でも再計測が必要になる場合があります。
