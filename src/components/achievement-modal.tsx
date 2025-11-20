@@ -36,7 +36,7 @@ export default function AchievementModal({ open, onClose, isUnlocked, distanceMe
         <p className="mt-3 text-sm text-zinc-600">
           {isUnlocked
             ? achievement?.description ?? "スポットに到達しました。"
-            : `${achievement?.spot ?? "スポット"}に近づいて50m圏内でチェックインしましょう。`}
+            : `${achievement?.spot ?? "スポット"}に近づいて100m圏内でチェックインしましょう。`}
         </p>
         {typeof distanceMeters === "number" && (
           <p className="mt-4 text-xs uppercase tracking-[0.4em] text-zinc-500">
