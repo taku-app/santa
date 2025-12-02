@@ -83,20 +83,24 @@ export default function Home() {
     setIsCheckingPremium(true);
     setPremiumMessage("プレミアム状態を確認中です...");
 
-    supabase
-      .from("user_payments")
-      .select("status")
-      .eq("user_id", session.user.id)
-      .eq("status", "paid")
-      .maybeSingle()
-      .then(({ data, error }) => {
+    const checkPremium = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_payments")
+          .select("status")
+          .eq("user_id", session.user.id)
+          .eq("status", "paid")
+          .maybeSingle();
+
         if (!isMounted) return;
+
         if (error && error.code !== "PGRST116") {
           console.error("Failed to fetch premium status", error);
           setPremiumMessage("プレミアム状態を取得できませんでした。時間をおいて再読み込みしてください。");
           setIsPremium(false);
           return;
         }
+
         if (data) {
           setIsPremium(true);
           setPremiumMessage("プレミアムが有効になりました。いつでも /game を開けます。");
@@ -104,12 +108,14 @@ export default function Home() {
           setIsPremium(false);
           setPremiumMessage("");
         }
-      })
-      .finally(() => {
+      } finally {
         if (isMounted) {
           setIsCheckingPremium(false);
         }
-      });
+      }
+    };
+
+    checkPremium();
 
     return () => {
       isMounted = false;

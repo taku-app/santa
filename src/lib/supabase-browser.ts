@@ -14,6 +14,10 @@ export function supabaseBrowserClient() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
+    // During build time, return a mock client to avoid errors
+    if (typeof window === 'undefined') {
+      return null as unknown as SupabaseClient;
+    }
     throw new Error(
       "認証サービスのURLとキーが設定されていません。NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY を確認してください。",
     );
