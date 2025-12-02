@@ -1,10 +1,11 @@
 'use client';
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import AuthPanel from "@/components/auth-panel";
 import FooterStatus from "@/components/footer-status";
+import { useSupabaseSession } from "@/hooks/use-supabase-session";
 
 const heroStats = [
   { label: "名古屋スポット", value: "6" },
@@ -61,7 +62,97 @@ const faqs = [
 ];
 
 export default function Home() {
+  const { session, supabase } = useSupabaseSession();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [isCheckingPremium, setIsCheckingPremium] = useState(false);
+  const [premiumLoading, setPremiumLoading] = useState(false);
+  const [premiumMessage, setPremiumMessage] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!session) {
+      setIsPremium(false);
+      setPremiumMessage("");
+      setIsCheckingPremium(false);
+      return () => {
+        isMounted = false;
+      };
+    }
+
+    setIsCheckingPremium(true);
+    setPremiumMessage("プレミアム状態を確認中です...");
+
+    supabase
+      .from("user_payments")
+      .select("status")
+      .eq("user_id", session.user.id)
+      .eq("status", "paid")
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!isMounted) return;
+        if (error && error.code !== "PGRST116") {
+          console.error("Failed to fetch premium status", error);
+          setPremiumMessage("プレミアム状態を取得できませんでした。時間をおいて再読み込みしてください。");
+          setIsPremium(false);
+          return;
+        }
+        if (data) {
+          setIsPremium(true);
+          setPremiumMessage("プレミアムが有効になりました。いつでも /game を開けます。");
+        } else {
+          setIsPremium(false);
+          setPremiumMessage("");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsCheckingPremium(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session, supabase]);
+
+  async function handlePremiumClick() {
+    if (!session) {
+      setPremiumMessage("プレミアム決済にはログインが必要です。");
+      setIsLoginOpen(true);
+      return;
+    }
+
+    if (isPremium) {
+      window.location.href = "/game";
+      return;
+    }
+
+    const email = session.user.email;
+    if (!email) {
+      setPremiumMessage("メールアドレスが見つかりません。再ログインしてからお試しください。");
+      return;
+    }
+
+    setPremiumLoading(true);
+    setPremiumMessage("");
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: session.user.id, email }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.url) {
+        throw new Error(data.error ?? "決済ページの生成に失敗しました。");
+      }
+      window.location.href = data.url;
+    } catch (error) {
+      setPremiumMessage(error instanceof Error ? error.message : "決済の開始に失敗しました。");
+    } finally {
+      setPremiumLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-rose-50/60 text-zinc-900">
@@ -233,19 +324,47 @@ export default function Home() {
                   実績チェックへ
                 </Link>
               </div>
-              <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6">
-                <div className="inline-flex rounded-full bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-500">
-                  COMING SOON
+              <div id="premium" className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6">
+                <div
+                  className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                    isPremium ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-500"
+                  }`}
+                >
+                  {isPremium ? "ACTIVE" : "COMING SOON"}
                 </div>
-                <h3 className="mt-2 text-lg font-semibold">Premium ¥500</h3>
+                <h3 className="mt-2 text-lg font-semibold">
+                  {isPremium ? "Premium アクセス中" : "Premium ¥500"}
+                </h3>
                 <ul className="mt-4 space-y-2 text-sm text-zinc-600">
                   <li>・サンタ＆トナカイAR</li>
                   <li>・限定実績＆BGM</li>
                   <li>・優先サポート</li>
                 </ul>
-                <button className="mt-6 w-full rounded-full bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-rose-200">
-                  決済ページモック
+                <button
+                  type="button"
+                  onClick={handlePremiumClick}
+                  disabled={premiumLoading || isCheckingPremium}
+                  className={`mt-6 w-full rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-rose-200 transition ${
+                    isPremium
+                      ? "bg-emerald-600 hover:bg-emerald-700"
+                      : "bg-rose-500 hover:bg-rose-600 disabled:opacity-60"
+                  }`}
+                >
+                  {isPremium
+                    ? "ゲームページへ"
+                    : premiumLoading
+                      ? "決済ページへ遷移中..."
+                      : "プレミアムにアップグレード"}
                 </button>
+                {premiumMessage && (
+                  <p
+                    className={`mt-3 text-xs ${
+                      isPremium ? "text-emerald-600" : "text-rose-500"
+                    }`}
+                  >
+                    {premiumMessage}
+                  </p>
+                )}
               </div>
             </div>
           </div>

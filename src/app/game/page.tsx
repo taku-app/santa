@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import AchievementModal from "@/components/achievement-modal";
+import { useSupabaseSession } from "@/hooks/use-supabase-session";
 
 const THRESHOLD_METERS = 100;
 
@@ -14,6 +15,10 @@ type AchievementSpot = {
   description: string;
   lat: number;
   lng: number;
+};
+
+type UserAchievementRow = {
+  achievement_id: string;
 };
 
 const baseAchievements: AchievementSpot[] = [
@@ -107,6 +112,7 @@ function calculateDistanceMeters(a: { lat: number; lng: number }, b: { lat: numb
 }
 
 export default function GamePage() {
+  const { session, supabase } = useSupabaseSession();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [status, setStatus] = useState<"idle" | "checking" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -119,6 +125,8 @@ export default function GamePage() {
   } | null>(null);
   const [arStage, setArStage] = useState<"hidden" | "celebration" | "camera">("hidden");
   const [hasTriggeredArIntro, setHasTriggeredArIntro] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState<"idle" | "syncing" | "success" | "error">("idle");
+  const [cloudStatusMessage, setCloudStatusMessage] = useState("");
 
   const achievements = baseAchievements.map((item) => ({
     ...item,
@@ -126,6 +134,86 @@ export default function GamePage() {
   }));
   const unlockedCount = achievements.filter((ach) => ach.unlocked).length;
   const firstUnlocked = achievements.find((ach) => ach.unlocked);
+
+  // Supabase progress needs to stay in sync with the browser session, so we update state via this effect.
+  useEffect(() => {
+    let isSubscribed = true;
+
+    if (!session) {
+      return () => {
+        isSubscribed = false;
+      };
+    }
+
+    const loadCloudProgress = async () => {
+      setCloudStatus("syncing");
+      setCloudStatusMessage("クラウド進捗を同期中...");
+
+      const { data, error } = await supabase
+        .from<UserAchievementRow>("user_achievements")
+        .select("achievement_id")
+        .eq("user_id", session.user.id);
+
+      if (!isSubscribed) {
+        return;
+      }
+
+      if (error) {
+        console.error("Failed to fetch achievement progress", error);
+        setCloudStatus("error");
+        setCloudStatusMessage("クラウド実績の取得に失敗しました。");
+        return;
+      }
+
+      const next: Record<string, boolean> = {};
+      data?.forEach((row) => {
+        next[row.achievement_id] = true;
+      });
+      setUnlockedMap(next);
+      setCloudStatus("success");
+      setCloudStatusMessage("クラウドと同期済み");
+    };
+
+    void loadCloudProgress();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [session, supabase]);
+
+  const persistUnlockedAchievements = useCallback(
+    async (achievementIds: string[], coords: { lat: number; lng: number }) => {
+      if (!session || achievementIds.length === 0) {
+        return;
+      }
+
+      setCloudStatus("syncing");
+      setCloudStatusMessage("実績をクラウドへ保存中...");
+
+      const payload = achievementIds.map((achievementId) => ({
+        user_id: session.user.id,
+        achievement_id: achievementId,
+        unlocked_at: new Date().toISOString(),
+        last_lat: coords.lat,
+        last_lng: coords.lng,
+      }));
+
+      const { error } = await supabase
+        .from("user_achievements")
+        .upsert(payload, { onConflict: "user_id,achievement_id" });
+
+      if (error) {
+        console.error("Failed to persist achievements", error);
+        setCloudStatus("error");
+        setCloudStatusMessage("クラウド保存に失敗しました。通信環境を確認してください。");
+        return;
+      }
+
+      setCloudStatus("success");
+      setCloudStatusMessage("クラウドと同期済み");
+    },
+    [session, supabase],
+  );
 
   useEffect(() => {
     if (arStage === "celebration") {
@@ -170,6 +258,10 @@ export default function GamePage() {
             });
             return next;
           });
+          void persistUnlockedAchievements(
+            unlockedNow.map(({ spot }) => spot.id),
+            coords,
+          );
           setStatus("success");
           setMessage(`${unlockedNow[0].spot.title} を解除しました！`);
           setModalData({
@@ -465,6 +557,15 @@ export default function GamePage() {
                 />
               </div>
             </div>
+            <p
+              className={`text-xs ${
+                session && cloudStatus === "error" ? "text-rose-500" : "text-zinc-500"
+              }`}
+            >
+              {session
+                ? cloudStatusMessage || "ログイン中はクラウドに同期されます。"
+                : "ログインすると解除状況をSupabaseに保存できます。"}
+            </p>
 
             {unlockedCount > 0 && (
               <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-4 shadow-inner">
