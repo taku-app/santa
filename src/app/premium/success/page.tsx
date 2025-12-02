@@ -1,14 +1,14 @@
 'use client';
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { useSupabaseSession } from "@/hooks/use-supabase-session";
 
 type Status = "idle" | "processing" | "success" | "error";
 
-export default function PremiumSuccessPage() {
+function PremiumSuccessContent() {
   const { session } = useSupabaseSession();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
@@ -100,5 +100,20 @@ export default function PremiumSuccessPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PremiumSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-rose-50 via-white to-emerald-50 px-4 py-12 text-zinc-900">
+        <div className="mx-auto flex max-w-2xl flex-col gap-6 rounded-3xl bg-white/90 p-8 text-center shadow-2xl ring-1 ring-rose-100">
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Premium Plan</p>
+          <h1 className="text-3xl font-bold text-zinc-900">読み込み中...</h1>
+        </div>
+      </div>
+    }>
+      <PremiumSuccessContent />
+    </Suspense>
   );
 }

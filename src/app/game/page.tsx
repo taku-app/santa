@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -15,10 +17,6 @@ type AchievementSpot = {
   description: string;
   lat: number;
   lng: number;
-};
-
-type UserAchievementRow = {
-  achievement_id: string;
 };
 
 const baseAchievements: AchievementSpot[] = [
@@ -150,7 +148,7 @@ export default function GamePage() {
       setCloudStatusMessage("クラウド進捗を同期中...");
 
       const { data, error } = await supabase
-        .from<UserAchievementRow>("user_achievements")
+        .from("user_achievements")
         .select("achievement_id")
         .eq("user_id", session.user.id);
 
