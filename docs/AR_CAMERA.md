@@ -53,7 +53,7 @@ The AR camera is automatically triggered when:
 
 ### Dependencies
 
-- `@google/model-viewer` (v3.4.0) - WebXR AR support
+- `@google/model-viewer` (v4.1.0) - WebXR AR support
 - Browser APIs: MediaDevices, Canvas
 
 ### 3D Model Requirements
