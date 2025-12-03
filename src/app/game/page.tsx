@@ -625,14 +625,23 @@ export default function GamePage() {
                       最初の実績を解除したので、ARカメラでキャラクター「ピコモモ」を召喚できます 🎄
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setArStage("camera")}
-                    className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-red-600 to-green-600 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-red-300 transition hover:from-red-700 hover:to-green-700"
-                  >
-                    <span className="text-base">📸</span>
-                    ARカメラを起動
-                  </button>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Link
+                      href="/ar-camera"
+                      className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-red-600 to-green-600 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-red-300 transition hover:from-red-700 hover:to-green-700"
+                    >
+                      <span className="text-base">📸</span>
+                      ARカメラを起動
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setArStage("camera")}
+                      className="flex items-center justify-center gap-2 rounded-full border-2 border-rose-300 bg-white px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-rose-600 transition hover:bg-rose-50"
+                    >
+                      <span className="text-base">🎨</span>
+                      モック表示
+                    </button>
+                  </div>
                 </div>
                 <div className="mt-4 h-36 overflow-hidden rounded-2xl border border-dashed border-rose-200 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900">
                   <div className="relative h-full w-full">

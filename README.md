@@ -34,12 +34,42 @@ Next.js (App Router) + TypeScript + Tailwind を使った名古屋限定のク�
 - メール + パスワードのサインイン / サインアップ / サインアウト UI（`src/components/auth-panel.tsx`）
   - 認証状態に応じてフォームとログアウトカードを切り替え
   - ステータスメッセージ表示
+- **ARカメラ機能** (`/ar-camera`)
+  - Google Model Viewer による3D GLB/GLTFモデル表示
+  - カメラコントロール（回転・ズーム）
+  - 写真撮影機能（スクリーンショット）
+  - ARモード対応（iOS AR Quick Look / Android Scene Viewer / WebXR）
+  - ダウンロード可能な画像キャプチャ
+
+## ARカメラについて
+
+`/ar-camera` ページでは、`@google/model-viewer` を使用した3D ARカメラ体験ができます。
+
+### 使用ライブラリ
+
+- **[@google/model-viewer](https://modelviewer.dev/)** - Google製のWeb Components ベースの3DモデルビューアーとARライブラリ
+
+### 対応プラットフォーム
+
+- **iOS**: AR Quick Look (Safari)
+- **Android**: Scene Viewer (Chrome)
+- **Desktop**: WebXR対応ブラウザ
+
+### 3Dモデルの追加方法
+
+1. GLB または GLTF 形式の3Dモデルを用意
+2. `public/` ディレクトリに配置（例: `public/santa.glb`）
+3. `src/app/ar-camera/page.tsx` の `src` 属性を更新
+
+推奨モデルソース:
+- [Sketchfab](https://sketchfab.com) - 無料・有料の高品質3Dモデル
+- [Poly Pizza](https://poly.pizza) - 無料のCC0ライセンス3Dモデル
 
 ## Next Step の候補
 
 1. Supabase のデータベースにスポット情報を保存し、`page.tsx` からフェッチする
 2. 決済フロー用の Stripe Checkout リンクを設定
-3. AR UI（カメラアクセスや3Dモデル描画）の実装
+3. ~~AR UI（カメラアクセスや3Dモデル描画）の実装~~ ✅ 実装済み
 
 ## Supabase 実績テーブル
 
