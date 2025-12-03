@@ -30,6 +30,12 @@ Next.js (App Router) + TypeScript + Tailwind を使った名古屋限定のク�
 - 5スポット制覇でサンタARが解放される説明コンテンツ
 - `/game` で名古屋主要6スポット（ミッドランドスクエア、オアシス21、名古屋城、大名古屋ビルヂング、名古屋港ガーデンふ頭、大須商店街）それぞれの50m圏内判定と簡易スタンプマップ
 - 実績解除結果を伝えるモーダル（`src/components/achievement-modal.tsx`）
+- **ARカメラ機能**（`src/components/ar-camera.tsx`）
+  - リアルタイムカメラアクセスとプレビュー
+  - 3Dモデル表示（GLB/GLTF形式サポート、Google model-viewer使用）
+  - 写真撮影と保存機能
+  - WebXR AR対応（iOS/Android）
+  - 詳細は `docs/AR_CAMERA.md` を参照
 - Supabase Browser Client のセットアップ `src/lib/supabase-browser.ts`
 - メール + パスワードのサインイン / サインアップ / サインアウト UI（`src/components/auth-panel.tsx`）
   - 認証状態に応じてフォームとログアウトカードを切り替え
@@ -39,7 +45,7 @@ Next.js (App Router) + TypeScript + Tailwind を使った名古屋限定のク�
 
 1. Supabase のデータベースにスポット情報を保存し、`page.tsx` からフェッチする
 2. 決済フロー用の Stripe Checkout リンクを設定
-3. AR UI（カメラアクセスや3Dモデル描画）の実装
+3. 3Dモデルファイルの追加（`/public/models/santa.glb` にサンタモデルを配置）
 
 ## Supabase 実績テーブル
 
