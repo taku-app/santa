@@ -1,7 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-declare namespace JSX {
-  interface IntrinsicElements {
-    'model-viewer': ModelViewerJSX & React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+import 'react';
+
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements {
+      'model-viewer': ModelViewerJSX & React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    }
   }
 }
 
@@ -10,10 +13,16 @@ interface ModelViewerJSX {
   alt?: string;
   ar?: boolean;
   'ar-modes'?: string;
+  'ar-scale'?: string;
   'camera-controls'?: boolean;
-  'touch-action'?: string;
-  'auto-rotate'?: boolean;
+  'disable-zoom'?: boolean;
   'shadow-intensity'?: string;
-  style?: React.CSSProperties;
-  ref?: React.Ref<any>;
+  autoplay?: boolean;
+  poster?: string;
+  'interaction-prompt'?: string;
+  'interaction-prompt-threshold'?: string;
+  loading?: 'auto' | 'lazy' | 'eager';
+  onLoad?: () => void;
+  onError?: () => void;
+  ref?: React.Ref<HTMLElement>;
 }
