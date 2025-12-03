@@ -23,7 +23,7 @@ export default function ARCameraPage() {
     // Load model-viewer script
     const script = document.createElement('script');
     script.type = 'module';
-    script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js';
+    script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js';
     document.head.appendChild(script);
 
     return () => {
@@ -194,7 +194,7 @@ export default function ARCameraPage() {
                   if (el && !modelViewerRef.current) {
                     const mv = document.createElement('model-viewer') as ModelViewerElement;
                     mv.setAttribute('src', 'https://modelviewer.dev/shared-assets/models/Astronaut.glb');
-                    mv.setAttribute('alt', 'Christmas 3D Model');
+                    mv.setAttribute('alt', '3D Astronaut Model (Sample)');
                     mv.setAttribute('ar', '');
                     mv.setAttribute('ar-modes', 'webxr scene-viewer quick-look');
                     mv.setAttribute('camera-controls', '');
@@ -322,11 +322,11 @@ export default function ARCameraPage() {
                 モデルについて
               </h3>
               <p className="mt-3 text-sm text-blue-800">
-                現在は宇宙飛行士のサンプルモデルを表示しています。
+                現在はサンプルとして宇宙飛行士のモデルを表示しています。クリスマステーマのモデルに変更するには、
                 <code className="mt-2 block rounded bg-blue-100 px-2 py-1 font-mono text-xs">
                   /public/santa.glb
                 </code>
-                に好きなGLB/GLTFモデルを配置すると、そのモデルを表示できます。
+                に好きなGLB/GLTFモデルを配置して、ソースコードの `src` 属性を更新してください。
               </p>
               <p className="mt-3 text-xs text-blue-700">
                 💡 無料の3Dモデルは
