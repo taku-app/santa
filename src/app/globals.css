@@ -24,3 +24,45 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Christmas animations */
+@keyframes snow {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-snow {
+  animation: snow 15s linear infinite;
+}
+
+.animate-snow-delay-1 {
+  animation: snow 18s linear infinite;
+  animation-delay: 2s;
+}
+
+.animate-snow-delay-2 {
+  animation: snow 20s linear infinite;
+  animation-delay: 4s;
+}
+
+.animate-snow-delay-3 {
+  animation: snow 16s linear infinite;
+  animation-delay: 6s;
+}
+
+.animate-snow-delay-4 {
+  animation: snow 22s linear infinite;
+  animation-delay: 8s;
+}

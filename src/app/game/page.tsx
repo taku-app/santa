@@ -221,6 +221,17 @@ export default function GamePage() {
   }, [arStage]);
 
   function handleCheckLocation() {
+    if (!session) {
+      setStatus("error");
+      setMessage("実績を解除するにはログインが必要です。トップページからログインしてください。");
+      setModalData({
+        achievement: baseAchievements[0],
+        unlocked: false,
+        distance: undefined,
+      });
+      return;
+    }
+
     if (!("geolocation" in navigator)) {
       setStatus("error");
       setMessage("この端末では位置情報を取得できません。");
@@ -294,7 +305,13 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 via-white to-emerald-50 px-4 py-8 text-zinc-900">
+    <div className="min-h-screen bg-gradient-to-b from-red-50 via-green-50 to-red-50 px-4 py-8 text-zinc-900">
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="animate-snow absolute text-3xl opacity-40">❄️</div>
+        <div className="animate-snow-delay-1 absolute left-1/4 text-2xl opacity-30">⭐</div>
+        <div className="animate-snow-delay-2 absolute left-1/2 text-4xl opacity-30">❄️</div>
+        <div className="animate-snow-delay-3 absolute left-3/4 text-2xl opacity-40">✨</div>
+      </div>
       <AchievementModal
         open={Boolean(modalData)}
         onClose={() => setModalData(null)}
@@ -367,10 +384,12 @@ export default function GamePage() {
       )}
       {isMenuOpen && (
         <div className="fixed inset-0 z-40 flex items-start justify-end bg-black/30 px-4 py-6 backdrop-blur-sm">
-          <div className="h-full w-full max-w-md overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+          <div className="h-full w-full max-w-md overflow-y-auto rounded-3xl border-2 border-green-200 bg-white p-6 shadow-2xl sm:p-8">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Stamp Rally</p>
+                <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-red-500">
+                  <span className="text-lg">🎁</span> Stamp Rally
+                </p>
                 <h2 className="text-2xl font-bold text-zinc-900">実績ギャラリー</h2>
               </div>
               <button
@@ -382,7 +401,7 @@ export default function GamePage() {
               </button>
             </div>
             <p className="mt-2 text-sm text-zinc-600">
-              未解除のスポットはグレーで表示されます。現地でチェックインすると華やかなスタンプに変化します。
+              未解除のスポットは 🔒 で表示されます。現地でチェックインすると華やかなスタンプに変化します 🎉
             </p>
             <div className="mt-6 grid gap-4">
               {achievements.map((ach) => (
@@ -390,24 +409,25 @@ export default function GamePage() {
                   key={ach.id}
                   className={`rounded-2xl border p-4 transition ${
                     ach.unlocked
-                      ? "border-rose-200 bg-gradient-to-br from-rose-100 via-white to-emerald-50 shadow-lg"
+                      ? "border-red-200 bg-gradient-to-br from-red-100 via-white to-green-50 shadow-lg"
                       : "border-dashed border-zinc-200 bg-zinc-50/60 text-zinc-400"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <h3
-                      className={`text-lg font-semibold ${
-                        ach.unlocked ? "text-rose-600" : "text-zinc-400"
+                      className={`flex items-center gap-2 text-lg font-semibold ${
+                        ach.unlocked ? "text-red-600" : "text-zinc-400"
                       }`}
                     >
+                      <span>{ach.unlocked ? '🎁' : '🔒'}</span>
                       {ach.title}
                     </h3>
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        ach.unlocked ? "bg-emerald-100 text-emerald-700" : "bg-zinc-200 text-zinc-500"
+                        ach.unlocked ? "bg-green-100 text-green-700" : "bg-zinc-200 text-zinc-500"
                       }`}
                     >
-                      {ach.unlocked ? "Unlocked" : "Locked"}
+                      {ach.unlocked ? "✓ Unlocked" : "Locked"}
                     </span>
                   </div>
                   <p className={`mt-1 text-sm ${ach.unlocked ? "text-zinc-600" : "text-zinc-400"}`}>
@@ -422,37 +442,48 @@ export default function GamePage() {
           </div>
         </div>
       )}
-      <div className="mx-auto flex max-w-4xl flex-col gap-8 rounded-3xl bg-white/80 p-6 shadow-2xl ring-1 ring-rose-100 sm:p-10">
+      <div className="mx-auto flex max-w-4xl flex-col gap-8 rounded-3xl border-2 border-red-200 bg-white/90 p-6 shadow-2xl ring-2 ring-green-100/50 sm:p-10">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Field Game</p>
-            <h1 className="text-3xl font-bold">スポット チェックイン</h1>
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-red-500">
+              <span className="text-lg">🎮</span> Field Game
+            </p>
+            <h1 className="flex items-center gap-2 text-3xl font-bold">
+              <span className="text-2xl">🎯</span>
+              スポット チェックイン
+            </h1>
             <p className="mt-1 text-sm text-zinc-500">
               現在地を確認して、100m圏内の近くにあるスポットの実績を解除できます。
+              {!session && <span className="ml-1 font-semibold text-red-600">※ログインが必要です 🔒</span>}
             </p>
           </div>
           <div className="flex gap-3">
             <button
               type="button"
               onClick={() => setIsMenuOpen(true)}
-              className="inline-flex items-center justify-center rounded-full border border-rose-200 px-6 py-2 text-sm font-semibold text-rose-500 shadow-sm transition hover:bg-rose-50"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-green-200 bg-green-50 px-6 py-2 text-sm font-semibold text-green-700 shadow-sm transition hover:bg-green-100"
             >
+              <span className="text-lg">🎄</span>
               メニュー
             </button>
             <Link
               href="/"
-              className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-6 py-2 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-6 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100"
             >
-              ← LPへ戻る
+              <span className="text-lg">🏠</span>
+              LPへ戻る
             </Link>
           </div>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[3fr,2fr]">
-          <div className="rounded-3xl border border-rose-100 bg-gradient-to-br from-rose-100 to-white p-6 shadow-inner">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-rose-500">簡易マップ</p>
-            <div className="relative mt-4 h-80 overflow-hidden rounded-2xl border border-white/40 bg-[radial-gradient(circle_at_center,_rgba(244,114,182,0.2),_rgba(255,255,255,0.1))] text-xs text-zinc-600">
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.2)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.2)_1px,transparent_1px)] bg-[size:20px_20px]" />
+          <div className="rounded-3xl border-2 border-green-200 bg-gradient-to-br from-red-50 to-green-50 p-6 shadow-xl">
+            <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.3em] text-green-600">
+              <span className="text-lg">🗺️</span>
+              簡易マップ
+            </p>
+            <div className="relative mt-4 h-80 overflow-hidden rounded-2xl border-2 border-red-200 bg-[radial-gradient(circle_at_center,_rgba(220,38,38,0.15),_rgba(34,197,94,0.15))] text-xs text-zinc-600">
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(220,38,38,0.1)_1px,transparent_1px),linear-gradient(rgba(34,197,94,0.1)_1px,transparent_1px)] bg-[size:20px_20px]" />
               {achievements.map((spot) => {
                 const position = projectToMap(spot.lat, spot.lng);
                 return (
@@ -463,14 +494,14 @@ export default function GamePage() {
                   >
                     <span
                       className={`rounded-full px-3 py-1 text-[10px] font-semibold ${
-                        spot.unlocked ? "bg-rose-500 text-white" : "bg-zinc-200 text-zinc-500"
+                        spot.unlocked ? "bg-red-600 text-white shadow-lg" : "bg-zinc-300 text-zinc-600"
                       }`}
                     >
-                      {spot.title}
+                      {spot.unlocked ? '🎁 ' : '🔒 '}{spot.title}
                     </span>
                     <span
                       className={`mt-2 h-4 w-4 rounded-full border-4 ${
-                        spot.unlocked ? "border-white bg-rose-500 shadow-lg shadow-rose-200" : "border-zinc-100 bg-zinc-400"
+                        spot.unlocked ? "border-white bg-green-500 shadow-lg shadow-green-300" : "border-zinc-200 bg-zinc-400"
                       }`}
                     />
                   </div>
@@ -481,10 +512,10 @@ export default function GamePage() {
                   className="absolute flex flex-col items-center text-emerald-600"
                   style={projectToMap(userLocation.lat, userLocation.lng)}
                 >
-                  <span className="rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-white shadow">
-                    あなた
+                  <span className="rounded-full bg-blue-600 px-3 py-1 text-[10px] font-semibold text-white shadow">
+                    🎅 あなた
                   </span>
-                  <span className="mt-2 h-4 w-4 rounded-full border-4 border-white bg-emerald-500 shadow" />
+                  <span className="mt-2 h-4 w-4 animate-pulse rounded-full border-4 border-white bg-blue-500 shadow-lg" />
                 </div>
               )}
             </div>
@@ -493,17 +524,19 @@ export default function GamePage() {
             </p>
           </div>
 
-          <div className="space-y-6 rounded-3xl border border-zinc-100 bg-white/90 p-6 shadow-lg">
+          <div className="space-y-6 rounded-3xl border-2 border-red-200 bg-white/95 p-6 shadow-xl">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">ステータス</p>
+              <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-green-500">
+                <span className="text-lg">📊</span> ステータス
+              </p>
               <h2 className="mt-2 text-2xl font-bold text-zinc-900">
                 {status === "success"
-                  ? "実績解除済み"
+                  ? "🎉 実績解除済み"
                   : status === "checking"
-                    ? "測位中..."
+                    ? "📍 測位中..."
                     : status === "error"
-                      ? "圏内に未到達"
-                      : "未チェック"}
+                      ? "❌ 圏内に未到達"
+                      : "⏳ 未チェック"}
               </h2>
               <p className="mt-2 text-sm text-zinc-600">
                 {status === "success"
@@ -512,12 +545,12 @@ export default function GamePage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-dashed border-emerald-100 bg-emerald-50/80 p-4 text-sm text-emerald-700">
-              登録スポット数: {achievements.length} 箇所
+            <div className="rounded-2xl border border-dashed border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 text-sm text-green-700">
+              🎄 登録スポット数: {achievements.length} 箇所
               <br />
-              判定距離: {THRESHOLD_METERS}m 以内
+              🎯 判定距離: {THRESHOLD_METERS}m 以内
               <br />
-              現在のスタンプ: {unlockedCount} / {achievements.length}
+              ⭐ 現在のスタンプ: {unlockedCount} / {achievements.length}
             </div>
 
             {message && (
@@ -535,10 +568,25 @@ export default function GamePage() {
             <button
               type="button"
               onClick={handleCheckLocation}
-              disabled={status === "checking"}
-              className="w-full rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 disabled:opacity-50"
+              disabled={status === "checking" || !session}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-red-600 to-green-600 px-4 py-3 text-sm font-semibold text-white shadow-xl shadow-red-300 transition hover:from-red-700 hover:to-green-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {status === "checking" ? "測位中..." : "現在地を確認"}
+              {!session ? (
+                <>
+                  <span className="text-lg">🔒</span>
+                  ログインが必要です
+                </>
+              ) : status === "checking" ? (
+                <>
+                  <span className="text-lg">📍</span>
+                  測位中...
+                </>
+              ) : (
+                <>
+                  <span className="text-lg">🎯</span>
+                  現在地を確認
+                </>
+              )}
             </button>
 
             <div>
@@ -548,9 +596,9 @@ export default function GamePage() {
                   {unlockedCount} / {achievements.length}
                 </span>
               </div>
-              <div className="mt-2 h-2 rounded-full bg-rose-100">
+              <div className="mt-2 h-2 rounded-full bg-red-100">
                 <div
-                  className="h-full rounded-full bg-rose-500 transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-red-500 to-green-500 transition-all"
                   style={{ width: `${(unlockedCount / achievements.length) * 100}%` }}
                 />
               </div>
@@ -561,25 +609,28 @@ export default function GamePage() {
               }`}
             >
               {session
-                ? cloudStatusMessage || "ログイン中はクラウドに同期されます。"
-                : "ログインすると解除状況をSupabaseに保存できます。"}
+                ? cloudStatusMessage || "ログイン中はクラウドに同期されます。 ☁️"
+                : "🔒 ログインすると解除状況をSupabaseに保存できます。"}
             </p>
 
             {unlockedCount > 0 && (
-              <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-4 shadow-inner">
+              <div className="rounded-2xl border-2 border-red-200 bg-gradient-to-br from-red-50 via-white to-green-50 p-4 shadow-xl">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">AR Experience</p>
-                    <h3 className="text-lg font-bold text-zinc-900">ARキャラクターが待っています</h3>
+                    <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-red-500">
+                      <span className="text-lg">🎅</span> AR Experience
+                    </p>
+                    <h3 className="text-lg font-bold text-zinc-900">ARキャラクターが待っています ✨</h3>
                     <p className="mt-1 text-sm text-zinc-600">
-                      最初の実績を解除したので、ARカメラでキャラクター「ピコモモ」を召喚できます。
+                      最初の実績を解除したので、ARカメラでキャラクター「ピコモモ」を召喚できます 🎄
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setArStage("camera")}
-                    className="rounded-full bg-rose-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
+                    className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-red-600 to-green-600 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-red-300 transition hover:from-red-700 hover:to-green-700"
                   >
+                    <span className="text-base">📸</span>
                     ARカメラを起動
                   </button>
                 </div>

@@ -161,8 +161,15 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-rose-50/60 text-zinc-900">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.2),_transparent_55%)]" />
+    <div className="min-h-screen bg-gradient-to-b from-red-50 via-green-50 to-red-50 text-zinc-900">
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(220,38,38,0.15),_transparent_55%)]" />
+        <div className="animate-snow absolute text-4xl opacity-60">❄️</div>
+        <div className="animate-snow-delay-1 absolute left-1/4 text-3xl opacity-50">⭐</div>
+        <div className="animate-snow-delay-2 absolute left-1/2 text-5xl opacity-40">❄️</div>
+        <div className="animate-snow-delay-3 absolute left-3/4 text-3xl opacity-70">✨</div>
+        <div className="animate-snow-delay-4 absolute right-1/4 text-4xl opacity-50">❄️</div>
+      </div>
       {isLoginOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
           <div className="relative w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
@@ -189,28 +196,43 @@ export default function Home() {
       )}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-10 lg:px-12">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Santa Quest</p>
-          <p className="text-lg font-bold text-zinc-900">Nagoya AR Journey</p>
+          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-red-500">
+            <span className="text-lg">🎅</span> Santa Quest
+          </p>
+          <p className="text-lg font-bold text-zinc-900">🎄 Nagoya AR Journey</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsLoginOpen(true)}
-          className="rounded-full border border-rose-200 bg-white/80 px-6 py-2 text-sm font-semibold text-rose-500 shadow-lg shadow-rose-100 transition hover:bg-rose-50"
-        >
-          ログイン
-        </button>
+        {session ? (
+          <button
+            type="button"
+            onClick={() => setIsLoginOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-emerald-200 bg-white/90 px-6 py-2 text-sm font-semibold text-emerald-600 shadow-lg shadow-emerald-100 transition hover:bg-emerald-50"
+          >
+            <span className="text-lg">👤</span>
+            {session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'ユーザー'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsLoginOpen(true)}
+            className="flex items-center gap-2 rounded-full border border-rose-200 bg-white/80 px-6 py-2 text-sm font-semibold text-rose-500 shadow-lg shadow-rose-100 transition hover:bg-rose-50"
+          >
+            <span className="text-lg">🎅</span>
+            ログイン
+          </button>
+        )}
       </header>
       <main className="mx-auto flex max-w-6xl flex-col gap-24 px-6 py-16 sm:px-10 lg:px-12">
-        <section className="rounded-3xl bg-gradient-to-br from-rose-100 via-white to-emerald-50 p-10 shadow-xl ring-1 ring-white/60 lg:p-16">
+        <section className="rounded-3xl bg-gradient-to-br from-red-100 via-white to-green-100 p-10 shadow-xl ring-2 ring-red-200/50 lg:p-16">
           <div className="grid items-center gap-10 lg:grid-cols-[3fr,2fr]">
             <div className="space-y-6">
-              <p className="inline-flex items-center rounded-full border border-rose-200 bg-white/70 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-rose-500">
+              <p className="inline-flex items-center gap-2 rounded-full border border-red-300 bg-white/90 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-red-600 shadow-sm">
+                <span className="text-base">🎄</span>
                 名古屋限定クリスマスARクエスト
               </p>
               <h1 className="text-4xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-5xl">
-                5スポット制覇でサンタが現れる。
+                🎅 5スポット制覇でサンタが現れる。
                 <br />
-                街を巡って実績を解放しよう。
+                街を巡って実績を解放しよう ✨
               </h1>
               <p className="text-lg text-zinc-600">
                 位置情報を元に名古屋の代表スポットをチェックイン。5つ以上の実績を解放すると、Webブラウザでカメラを起動し、ARサンタや限定トナカイとフォト撮影ができます。
@@ -219,24 +241,27 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => setIsLoginOpen(true)}
-                  className="rounded-full bg-rose-500 px-8 py-3 text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
+                  className="flex items-center gap-2 rounded-full bg-red-600 px-8 py-3 text-white shadow-xl shadow-red-300 transition hover:bg-red-700"
                 >
+                  <span className="text-lg">🎅</span>
                   メールでログイン
                 </button>
                 <a
                   href="#spots"
-                  className="rounded-full border border-rose-500/50 px-8 py-3 text-rose-500 transition hover:bg-rose-100"
+                  className="flex items-center gap-2 rounded-full border border-green-500/50 px-8 py-3 text-green-700 transition hover:bg-green-100"
                 >
+                  <span className="text-lg">🎄</span>
                   スポットを見る
                 </a>
               </div>
             </div>
-            <div className="rounded-2xl bg-white/75 p-6 shadow-lg ring-1 ring-rose-100">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-rose-400">
+            <div className="rounded-2xl border-2 border-red-200 bg-white/90 p-6 shadow-xl ring-2 ring-red-100/50">
+              <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-red-500">
+                <span className="text-lg">🎁</span>
                 現在の旅の進捗
               </h2>
               <p className="mt-4 text-2xl font-semibold text-zinc-900">
-                サンタARまであと <span className="text-rose-500">2 スポット</span>
+                サンタARまであと <span className="text-red-600">2 スポット</span> 🎅
               </p>
               <div className="mt-5 space-y-4">
                 <div>
@@ -244,12 +269,12 @@ export default function Home() {
                     <span>名古屋スポット達成率</span>
                     <span>3 / 5</span>
                   </div>
-                  <div className="mt-2 h-2 rounded-full bg-rose-100">
-                    <div className="h-full w-3/5 rounded-full bg-rose-500" />
+                  <div className="mt-2 h-2 rounded-full bg-red-100">
+                    <div className="h-full w-3/5 rounded-full bg-gradient-to-r from-red-500 to-green-500" />
                   </div>
                 </div>
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm text-emerald-700">
-                  5箇所を超えるとサンタが登場。さらにプレミアム課金でトナカイとの撮影も解放されます。
+                <div className="rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 text-sm text-green-700">
+                  🎄 5箇所を超えるとサンタが登場。さらにプレミアム課金でトナカイとの撮影も解放されます 🦌
                 </div>
               </div>
             </div>
