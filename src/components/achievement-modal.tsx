@@ -15,6 +15,8 @@ type Props = {
 export default function AchievementModal({ open, onClose, isUnlocked, distanceMeters, achievement }: Props) {
   if (!open) return null;
 
+  const needsLogin = !isUnlocked && distanceMeters === undefined;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
       <div className="relative w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
@@ -25,18 +27,22 @@ export default function AchievementModal({ open, onClose, isUnlocked, distanceMe
         >
           CLOSE
         </button>
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
-          {achievement?.spot ?? "Achievement"}
+        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">
+          {needsLogin ? '🔒 ログインが必要' : achievement?.spot ?? "Achievement"}
         </p>
         <h2 className="mt-2 text-2xl font-bold text-zinc-900">
-          {isUnlocked
-            ? `${achievement?.title ?? "実績"}を解除しました！`
-            : `${achievement?.title ?? "実績"}まであと少し`}
+          {needsLogin
+            ? '実績解除にはログインが必要です'
+            : isUnlocked
+              ? `${achievement?.title ?? "実績"}を解除しました！ 🎉`
+              : `${achievement?.title ?? "実績"}まであと少し`}
         </h2>
         <p className="mt-3 text-sm text-zinc-600">
-          {isUnlocked
-            ? achievement?.description ?? "スポットに到達しました。"
-            : `${achievement?.spot ?? "スポット"}に近づいて100m圏内でチェックインしましょう。`}
+          {needsLogin
+            ? 'クラウドに実績を保存するため、ログインしてからチェックインしてください。トップページの「🎅 ログイン」ボタンからアカウントを作成できます。'
+            : isUnlocked
+              ? achievement?.description ?? "スポットに到達しました。"
+              : `${achievement?.spot ?? "スポット"}に近づいて100m圏内でチェックインしましょう。`}
         </p>
         {typeof distanceMeters === "number" && (
           <p className="mt-4 text-xs uppercase tracking-[0.4em] text-zinc-500">
@@ -45,7 +51,12 @@ export default function AchievementModal({ open, onClose, isUnlocked, distanceMe
         )}
         {isUnlocked && (
           <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-700">
-            次のスポット解放へ進みましょう。ARカメラ画面からサンタが近づいてきます！
+            次のスポット解放へ進みましょう。ARカメラ画面からサンタが近づいてきます！ 🎅✨
+          </div>
+        )}
+        {needsLogin && (
+          <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+            トップページの「🏠 LPへ戻る」ボタンから戻り、ログインしてください。
           </div>
         )}
       </div>
