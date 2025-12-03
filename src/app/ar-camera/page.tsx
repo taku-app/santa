@@ -16,17 +16,20 @@ export default function ARCameraPage() {
   const [isARSupported, setIsARSupported] = useState<boolean | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showCaptured, setShowCaptured] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { session } = useSupabaseSession();
 
   useEffect(() => {
     // Load model-viewer script
     const script = document.createElement('script');
     script.type = 'module';
-    script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js';
+    script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js';
     document.head.appendChild(script);
 
     return () => {
-      document.head.removeChild(script);
+      if (script.parentNode === document.head) {
+        document.head.removeChild(script);
+      }
     };
   }, []);
 
@@ -55,6 +58,7 @@ export default function ARCameraPage() {
   const handleCapture = async () => {
     if (!modelViewerRef.current) return;
     
+    setErrorMessage(null);
     try {
       // Get screenshot from model-viewer
       const modelViewer = modelViewerRef.current;
@@ -64,7 +68,7 @@ export default function ARCameraPage() {
       setShowCaptured(true);
     } catch (error) {
       console.error('Failed to capture image:', error);
-      alert('写真の撮影に失敗しました。');
+      setErrorMessage('写真の撮影に失敗しました。モデルの読み込みが完了してから再度お試しください。');
     }
   };
 
@@ -247,6 +251,16 @@ export default function ARCameraPage() {
                 </button>
               )}
             </div>
+
+            {errorMessage && (
+              <div className="mt-4 rounded-2xl border-2 border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                <p className="flex items-center gap-2 font-semibold">
+                  <span className="text-lg">⚠️</span>
+                  エラー
+                </p>
+                <p className="mt-1">{errorMessage}</p>
+              </div>
+            )}
 
             <p className="mt-4 text-xs text-zinc-500">
               💡 3Dモデルをドラッグして回転、ピンチで拡大・縮小できます。
