@@ -56,7 +56,7 @@ export default function AchievementModal({ open, onClose, isUnlocked, distanceMe
         )}
         {needsLogin && (
           <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
-            トップページの「← LPへ戻る」ボタンから戻り、ログインしてください。
+            トップページの「🏠 LPへ戻る」ボタンから戻り、ログインしてください。
           </div>
         )}
       </div>
