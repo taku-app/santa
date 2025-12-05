@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import AchievementModal from "@/components/achievement-modal";
@@ -17,9 +17,15 @@ type AchievementSpot = {
   lng: number;
 };
 
-type UserAchievementRow = {
-  achievement_id: string;
-};
+type DisplayAchievement = AchievementSpot & { unlocked: boolean };
+
+const UNLOCK_SPARKS = [
+  { id: "spark-1", top: "18%", left: "18%", delay: "0s" },
+  { id: "spark-2", top: "12%", left: "70%", delay: "0.2s" },
+  { id: "spark-3", top: "70%", left: "20%", delay: "0.4s" },
+  { id: "spark-4", top: "65%", left: "75%", delay: "0.1s" },
+  { id: "spark-5", top: "40%", left: "10%", delay: "0.3s" },
+] as const;
 
 const baseAchievements: AchievementSpot[] = [
   {
@@ -111,6 +117,57 @@ function calculateDistanceMeters(a: { lat: number; lng: number }, b: { lat: numb
   return R * c;
 }
 
+function findClosestAchievement(
+  coords: { lat: number; lng: number },
+): { spot: AchievementSpot; distance: number } {
+  if (baseAchievements.length === 0) {
+    throw new Error("No achievements configured for distance checks.");
+  }
+
+  return baseAchievements.slice(1).reduce(
+    (closest, spot) => {
+      const distance = calculateDistanceMeters(coords, { lat: spot.lat, lng: spot.lng });
+      if (distance < closest.distance) {
+        return { spot, distance };
+      }
+      return closest;
+    },
+    {
+      spot: baseAchievements[0],
+      distance: calculateDistanceMeters(coords, { lat: baseAchievements[0].lat, lng: baseAchievements[0].lng }),
+    },
+  );
+}
+
+function AchievementCollectionCard({ achievement }: { achievement: DisplayAchievement }) {
+  return (
+    <div
+      className={`collection-card ${
+        achievement.unlocked ? "collection-card--unlocked" : "collection-card--locked"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="collection-card__spot">{achievement.spot}</p>
+          <h3 className="collection-card__title">{achievement.title}</h3>
+        </div>
+        <span
+          className={`collection-card__status ${
+            achievement.unlocked ? "collection-card__status--unlocked" : "collection-card__status--locked"
+          }`}
+        >
+          {achievement.unlocked ? "UNLOCKED" : "LOCKED"}
+        </span>
+      </div>
+      <p className="collection-card__description">{achievement.description}</p>
+      <div className="collection-card__chips">
+        <span>判定距離 {THRESHOLD_METERS}m</span>
+        <span>{achievement.unlocked ? "クラウド同期済み" : "現地チェック必要"}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function GamePage() {
   const { session, supabase } = useSupabaseSession();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -127,8 +184,14 @@ export default function GamePage() {
   const [hasTriggeredArIntro, setHasTriggeredArIntro] = useState(false);
   const [cloudStatus, setCloudStatus] = useState<"idle" | "syncing" | "success" | "error">("idle");
   const [cloudStatusMessage, setCloudStatusMessage] = useState("");
+  const [unlockCelebration, setUnlockCelebration] = useState<{
+    id: string;
+    title: string;
+    spot: string;
+  } | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
-  const achievements = baseAchievements.map((item) => ({
+  const achievements: DisplayAchievement[] = baseAchievements.map((item) => ({
     ...item,
     unlocked: unlockedMap[item.id] ?? false,
   }));
@@ -150,7 +213,7 @@ export default function GamePage() {
       setCloudStatusMessage("クラウド進捗を同期中...");
 
       const { data, error } = await supabase
-        .from<UserAchievementRow>("user_achievements")
+        .from("user_achievements")
         .select("achievement_id")
         .eq("user_id", session.user.id);
 
@@ -222,6 +285,52 @@ export default function GamePage() {
     }
   }, [arStage]);
 
+  const triggerUnlockFeedback = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      if ("vibrate" in navigator && typeof navigator.vibrate === "function") {
+        navigator.vibrate([180, 80, 180]);
+      }
+    } catch (error) {
+      console.error("Failed to vibrate device", error);
+    }
+
+    const AudioCtor =
+      window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtor) {
+      return;
+    }
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioCtor();
+    }
+
+    const ctx = audioContextRef.current;
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(820, ctx.currentTime);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.7);
+    oscillator.connect(gain).connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.7);
+  }, []);
+
+  useEffect(() => {
+    if (!unlockCelebration) {
+      return;
+    }
+
+    triggerUnlockFeedback();
+    const timeout = window.setTimeout(() => setUnlockCelebration(null), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [unlockCelebration, triggerUnlockFeedback]);
+
   function handleCheckLocation() {
     if (!("geolocation" in navigator)) {
       setStatus("error");
@@ -240,39 +349,41 @@ export default function GamePage() {
         };
         setUserLocation(coords);
 
-        const distances = baseAchievements.map((spot) => ({
-          spot,
-          distance: calculateDistanceMeters(coords, { lat: spot.lat, lng: spot.lng }),
-        }));
+        const closest = findClosestAchievement(coords);
+        const isWithinRange = closest.distance <= THRESHOLD_METERS;
 
-        const unlockedNow = distances.filter((entry) => entry.distance <= THRESHOLD_METERS);
-        const closest = distances.reduce((prev, current) =>
-          current.distance < prev.distance ? current : prev,
-        );
-
-        if (unlockedNow.length > 0) {
+        if (isWithinRange) {
           setUnlockedMap((prev) => {
             const next = { ...prev };
-            unlockedNow.forEach(({ spot }) => {
-              next[spot.id] = true;
-            });
+            next[closest.spot.id] = true;
+
+            // Calculate the count of newly unlocked achievements
+            const newlyUnlockedCount = baseAchievements.filter((ach) => next[ach.id]).length;
+
+            if (!hasTriggeredArIntro && newlyUnlockedCount >= 5) {
+              setHasTriggeredArIntro(true);
+              setArStage("celebration");
+            }
+
             return next;
           });
+          const canonicalCoords = { lat: closest.spot.lat, lng: closest.spot.lng };
           void persistUnlockedAchievements(
-            unlockedNow.map(({ spot }) => spot.id),
-            coords,
+            [closest.spot.id],
+            canonicalCoords,
           );
           setStatus("success");
-          setMessage(`${unlockedNow[0].spot.title} を解除しました！`);
+          setMessage(`${closest.spot.title} を解除しました！`);
           setModalData({
-            achievement: unlockedNow[0].spot,
+            achievement: closest.spot,
             unlocked: true,
-            distance: unlockedNow[0].distance,
+            distance: closest.distance,
           });
-          if (!hasTriggeredArIntro) {
-            setHasTriggeredArIntro(true);
-            setArStage("celebration");
-          }
+          setUnlockCelebration({
+            id: closest.spot.id,
+            title: closest.spot.title,
+            spot: closest.spot.spot,
+          });
         } else {
           setStatus("error");
           setMessage(`${closest.spot.title} まで ${Math.round(closest.distance)}m`);
@@ -296,7 +407,11 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 via-white to-emerald-50 px-4 py-8 text-zinc-900">
+    <div className="relative min-h-screen overflow-hidden bg-[#041109] text-white">
+      <div className="hero-aurora hero-aurora--game" />
+      <div className="floating-orb floating-orb--pink floating-orb--sm" />
+      <div className="floating-orb floating-orb--mint floating-orb--md" />
+      <div className="floating-orb floating-orb--gold floating-orb--lg" />
       <AchievementModal
         open={Boolean(modalData)}
         onClose={() => setModalData(null)}
@@ -304,6 +419,24 @@ export default function GamePage() {
         distanceMeters={modalData?.distance}
         achievement={modalData?.achievement}
       />
+      {unlockCelebration && (
+        <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center">
+          <div className="unlock-burst text-center text-white">
+            <div className="unlock-burst__ring" aria-hidden />
+            <div className="unlock-burst__ring unlock-burst__ring--secondary" aria-hidden />
+            <p className="text-xs font-semibold uppercase tracking-[0.6em] text-amber-200/80">Achievement</p>
+            <p className="mt-2 text-3xl font-bold">{unlockCelebration.title}</p>
+            <p className="mt-1 text-sm text-white/80">{unlockCelebration.spot}</p>
+          </div>
+          {UNLOCK_SPARKS.map((spark) => (
+            <span
+              key={spark.id}
+              className="unlock-burst__sparkle"
+              style={{ top: spark.top, left: spark.left, animationDelay: spark.delay }}
+            />
+          ))}
+        </div>
+      )}
       {arStage !== "hidden" && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4 py-8 backdrop-blur-md">
           {arStage === "celebration" ? (
@@ -368,93 +501,58 @@ export default function GamePage() {
         </div>
       )}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-40 flex items-start justify-end bg-black/30 px-4 py-6 backdrop-blur-sm">
-          <div className="h-full w-full max-w-md overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+        <div className="fixed inset-0 z-40 flex items-start justify-end bg-black/60 px-4 py-6 backdrop-blur-md">
+          <div className="h-full w-full max-w-md overflow-y-auto rounded-3xl border border-white/20 bg-gradient-to-br from-[#1e1130]/95 to-[#0a1f2d]/95 p-6 text-white shadow-[0_30px_80px_rgba(0,0,0,0.65)] sm:p-8">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Stamp Rally</p>
-                <h2 className="text-2xl font-bold text-zinc-900">実績ギャラリー</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-200">Stamp Rally</p>
+                <h2 className="text-2xl font-bold">実績ギャラリー</h2>
               </div>
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(false)}
-                className="rounded-full border border-zinc-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500 transition hover:bg-zinc-50"
+                className="rounded-full border border-white/30 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:bg-white/10"
               >
                 CLOSE
               </button>
             </div>
-            <p className="mt-2 text-sm text-zinc-600">
+            <p className="mt-2 text-sm text-white/70">
               未解除のスポットはグレーで表示されます。現地でチェックインすると華やかなスタンプに変化します。
             </p>
-            <div className="mt-6 grid gap-4">
+            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {achievements.map((ach) => (
-                <div
-                  key={ach.id}
-                  className={`rounded-2xl border p-4 transition ${
-                    ach.unlocked
-                      ? "border-rose-200 bg-gradient-to-br from-rose-100 via-white to-emerald-50 shadow-lg"
-                      : "border-dashed border-zinc-200 bg-zinc-50/60 text-zinc-400"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <h3
-                      className={`text-lg font-semibold ${
-                        ach.unlocked ? "text-rose-600" : "text-zinc-400"
-                      }`}
-                    >
-                      {ach.title}
-                    </h3>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        ach.unlocked ? "bg-emerald-100 text-emerald-700" : "bg-zinc-200 text-zinc-500"
-                      }`}
-                    >
-                      {ach.unlocked ? "Unlocked" : "Locked"}
-                    </span>
-                  </div>
-                  <p className={`mt-1 text-sm ${ach.unlocked ? "text-zinc-600" : "text-zinc-400"}`}>
-                    {ach.spot}
-                  </p>
-                  <p className={`mt-2 text-sm ${ach.unlocked ? "text-zinc-600" : "text-zinc-400"}`}>
-                    {ach.description}
-                  </p>
-                </div>
+                <AchievementCollectionCard key={`drawer-${ach.id}`} achievement={ach} />
               ))}
             </div>
           </div>
         </div>
       )}
-      <div className="mx-auto flex max-w-4xl flex-col gap-8 rounded-3xl bg-white/80 p-6 shadow-2xl ring-1 ring-rose-100 sm:p-10">
+      <div className="relative z-10 mx-auto flex max-w-5xl flex-col gap-12 px-4 pb-20 pt-12 sm:px-8">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Field Game</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.5em] text-rose-200/80">Field Game</p>
             <h1 className="text-3xl font-bold">スポット チェックイン</h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              現在地を確認して、100m圏内の近くにあるスポットの実績を解除できます。
-            </p>
+            <p className="mt-1 text-sm text-white/70">名古屋のキャンディースポットを巡り、100m圏内で実績を解放しましょう。</p>
           </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setIsMenuOpen(true)}
-              className="inline-flex items-center justify-center rounded-full border border-rose-200 px-6 py-2 text-sm font-semibold text-rose-500 shadow-sm transition hover:bg-rose-50"
-            >
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={() => setIsMenuOpen(true)} className="candy-button candy-button--ghost">
               メニュー
             </button>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center rounded-full border border-zinc-200 px-6 py-2 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50"
-            >
+            <Link href="/" className="candy-button candy-button--ghost">
               ← LPへ戻る
             </Link>
           </div>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[3fr,2fr]">
-          <div className="rounded-3xl border border-rose-100 bg-gradient-to-br from-rose-100 to-white p-6 shadow-inner">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-rose-500">簡易マップ</p>
-            <div className="relative mt-4 h-80 overflow-hidden rounded-2xl border border-white/40 bg-[radial-gradient(circle_at_center,_rgba(244,114,182,0.2),_rgba(255,255,255,0.1))] text-xs text-zinc-600">
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.2)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.2)_1px,transparent_1px)] bg-[size:20px_20px]" />
+          <div className="frosted-panel space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.5em] text-rose-200">Candy Map</p>
+              <h2 className="text-2xl font-bold">簡易マップ</h2>
+              <p className="mt-1 text-sm text-white/70">スポットの相対位置を示すミニマップ。判定自体はGPSで行われます。</p>
+            </div>
+            <div className="relative h-80 overflow-hidden rounded-2xl border border-white/20 bg-[radial-gradient(circle_at_center,_rgba(244,114,182,0.25),_rgba(3,0,20,0.6))] text-xs">
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.12)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.12)_1px,transparent_1px)] bg-[size:20px_20px]" />
               {achievements.map((spot) => {
                 const position = projectToMap(spot.lat, spot.lng);
                 return (
@@ -465,14 +563,16 @@ export default function GamePage() {
                   >
                     <span
                       className={`rounded-full px-3 py-1 text-[10px] font-semibold ${
-                        spot.unlocked ? "bg-rose-500 text-white" : "bg-zinc-200 text-zinc-500"
+                        spot.unlocked
+                          ? "bg-gradient-to-r from-rose-500 to-amber-400 text-white shadow-lg shadow-rose-500/30"
+                          : "bg-white/15 text-white/70"
                       }`}
                     >
                       {spot.title}
                     </span>
                     <span
                       className={`mt-2 h-4 w-4 rounded-full border-4 ${
-                        spot.unlocked ? "border-white bg-rose-500 shadow-lg shadow-rose-200" : "border-zinc-100 bg-zinc-400"
+                        spot.unlocked ? "border-white bg-rose-500 shadow shadow-rose-500/40" : "border-white/20 bg-white/30"
                       }`}
                     />
                   </div>
@@ -480,25 +580,23 @@ export default function GamePage() {
               })}
               {userLocation && (
                 <div
-                  className="absolute flex flex-col items-center text-emerald-600"
+                  className="absolute flex flex-col items-center text-emerald-200"
                   style={projectToMap(userLocation.lat, userLocation.lng)}
                 >
                   <span className="rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-semibold text-white shadow">
                     あなた
                   </span>
-                  <span className="mt-2 h-4 w-4 rounded-full border-4 border-white bg-emerald-500 shadow" />
+                  <span className="mt-2 h-4 w-4 rounded-full border-4 border-white bg-emerald-400 shadow" />
                 </div>
               )}
             </div>
-            <p className="mt-3 text-xs text-zinc-500">
-              ※ 実際のマップではなく、スポットとの相対位置のイメージ図です。実際の位置判定はGPSを使用します。
-            </p>
+            <p className="text-xs text-white/60">※ 実際のマップではなく、スポットとの相対距離をイメージ化した表示です。</p>
           </div>
 
-          <div className="space-y-6 rounded-3xl border border-zinc-100 bg-white/90 p-6 shadow-lg">
+          <div className="frosted-panel space-y-5">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-400">ステータス</p>
-              <h2 className="mt-2 text-2xl font-bold text-zinc-900">
+              <p className="text-xs font-semibold uppercase tracking-[0.5em] text-emerald-200">Status</p>
+              <h2 className="mt-2 text-2xl font-bold">
                 {status === "success"
                   ? "実績解除済み"
                   : status === "checking"
@@ -507,27 +605,25 @@ export default function GamePage() {
                       ? "圏内に未到達"
                       : "未チェック"}
               </h2>
-              <p className="mt-2 text-sm text-zinc-600">
+              <p className="mt-2 text-sm text-white/70">
                 {status === "success"
-                  ? "スタンプ帳に実績が追加されました。ギャラリーから進捗を確認しましょう。"
-                  : "「現在地を確認」ボタンを押してスポットをチェックインしましょう。"}
+                  ? "スタンプ帳に実績を追加しました。ギャラリーでコレクション状況を確認できます。"
+                  : "「現在地を確認」でスポットチェックを実行できます。"}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-dashed border-emerald-100 bg-emerald-50/80 p-4 text-sm text-emerald-700">
-              登録スポット数: {achievements.length} 箇所
-              <br />
-              判定距離: {THRESHOLD_METERS}m 以内
-              <br />
-              現在のスタンプ: {unlockedCount} / {achievements.length}
+            <div className="grid gap-2 text-sm text-white/70">
+              <p>登録スポット数: {achievements.length} 箇所</p>
+              <p>判定距離: {THRESHOLD_METERS}m 以内</p>
+              <p>現在のスタンプ: {unlockedCount} / {achievements.length}</p>
             </div>
 
             {message && (
               <p
                 className={`rounded-2xl border px-4 py-3 text-sm ${
                   status === "success"
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-rose-200 bg-rose-50 text-rose-600"
+                    ? "border-emerald-300/60 bg-emerald-500/10 text-emerald-200"
+                    : "border-rose-300/60 bg-rose-500/10 text-rose-200"
                 }`}
               >
                 {message}
@@ -538,72 +634,86 @@ export default function GamePage() {
               type="button"
               onClick={handleCheckLocation}
               disabled={status === "checking"}
-              className="w-full rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600 disabled:opacity-50"
+              className="candy-button candy-button--primary w-full justify-center text-sm disabled:opacity-60"
             >
               {status === "checking" ? "測位中..." : "現在地を確認"}
             </button>
 
             <div>
-              <div className="flex justify-between text-xs font-semibold text-zinc-500">
+              <div className="flex justify-between text-xs text-white/70">
                 <span>スタンプ進捗</span>
                 <span>
                   {unlockedCount} / {achievements.length}
                 </span>
               </div>
-              <div className="mt-2 h-2 rounded-full bg-rose-100">
+              <div className="game-progress mt-2">
                 <div
-                  className="h-full rounded-full bg-rose-500 transition-all"
+                  className="game-progress__bar"
                   style={{ width: `${(unlockedCount / achievements.length) * 100}%` }}
                 />
               </div>
             </div>
-            <p
-              className={`text-xs ${
-                session && cloudStatus === "error" ? "text-rose-500" : "text-zinc-500"
-              }`}
-            >
+            <p className={`text-xs ${session && cloudStatus === "error" ? "text-rose-200" : "text-white/60"}`}>
               {session
                 ? cloudStatusMessage || "ログイン中はクラウドに同期されます。"
                 : "ログインすると解除状況をSupabaseに保存できます。"}
             </p>
 
-            {unlockedCount > 0 && (
-              <div className="rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-4 shadow-inner">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            {unlockedCount >= 5 && (
+              <div className="rounded-2xl border border-white/20 bg-gradient-to-br from-rose-500/30 via-transparent to-amber-400/20 p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">AR Experience</p>
-                    <h3 className="text-lg font-bold text-zinc-900">ARキャラクターが待っています</h3>
-                    <p className="mt-1 text-sm text-zinc-600">
-                      最初の実績を解除したので、ARカメラでキャラクター「ピコモモ」を召喚できます。
-                    </p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70">AR Experience</p>
+                    <h3 className="text-lg font-bold">サンタARを起動できます！</h3>
+                    <p className="mt-1 text-sm text-white/80">全スポット制覇おめでとう！サンタ召喚モードを今すぐ体験。</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setArStage("camera")}
-                    className="rounded-full bg-rose-500 px-5 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
+                    className="candy-button candy-button--primary text-xs uppercase tracking-[0.3em]"
                   >
                     ARカメラを起動
                   </button>
                 </div>
-                <div className="mt-4 h-36 overflow-hidden rounded-2xl border border-dashed border-rose-200 bg-gradient-to-b from-zinc-900 via-zinc-800 to-zinc-900">
-                  <div className="relative h-full w-full">
-                    <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
-                    <div className="absolute left-1/2 top-1/2 h-24 w-20 -translate-x-1/2 -translate-y-1/2 rounded-[45%] bg-gradient-to-b from-rose-200 to-rose-500 shadow-[0_8px_20px_rgba(244,114,182,0.45)]">
-                      <div className="absolute left-1/2 top-5 flex -translate-x-1/2 gap-3">
-                        <span className="h-3 w-3 rounded-full bg-white shadow-inner shadow-rose-400" />
-                        <span className="h-3 w-3 rounded-full bg-white shadow-inner shadow-rose-400" />
-                      </div>
-                      <div className="absolute left-1/2 top-12 -translate-x-1/2 text-xl text-white">^_^</div>
-                    </div>
-                    <div className="absolute inset-0 animate-pulse bg-[radial-gradient(circle,_rgba(255,255,255,0.15),_transparent_60%)] opacity-30" />
-                  </div>
-                </div>
               </div>
             )}
 
-            <p className="text-xs text-zinc-500">
+            {unlockedCount < 5 && (
+              <div className="rounded-2xl border border-white/15 bg-white/5 p-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white">
+                    {5 - unlockedCount}
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.4em] text-white/70">AR Unlock</p>
+                    <h3 className="text-lg font-bold">AR解放まであと {5 - unlockedCount} スポット！</h3>
+                  </div>
+                </div>
+                <p className="mt-3 text-sm text-white/70">名古屋を巡ってスタンプを集めるほど、演出が華やかになります。</p>
+              </div>
+            )}
+
+            <p className="text-xs text-white/60">
               ブラウザの位置情報許可が必要です。精度の都合で100m以内でも再計測が必要になる場合があります。
             </p>
+          </div>
+        </div>
+
+        <div className="frosted-panel border border-white/15">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.5em] text-rose-200">Collection Deck</p>
+              <h2 className="text-2xl font-bold">3Dコレクションカード</h2>
+              <p className="mt-1 text-sm text-white/70">解除したスポットをコレクションカードで眺めましょう。</p>
+            </div>
+            <div className="premium-pill bg-white/10 text-white">
+              {unlockedCount} / {achievements.length} 解放済み
+            </div>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {achievements.map((ach) => (
+              <AchievementCollectionCard key={`grid-${ach.id}`} achievement={ach} />
+            ))}
           </div>
         </div>
       </div>

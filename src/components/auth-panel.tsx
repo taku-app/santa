@@ -184,7 +184,7 @@ export default function AuthPanel({ onAuthSuccess }: Props) {
               onChange={(event) => setEmail(event.target.value)}
               required
               placeholder="you@example.com"
-              className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white/80 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+              className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white/80 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-red-100"
             />
           </div>
           {mode === "signUp" && (
@@ -198,7 +198,7 @@ export default function AuthPanel({ onAuthSuccess }: Props) {
                 onChange={(event) => setUsername(event.target.value)}
                 required={mode === "signUp"}
                 placeholder="Nagoya Santa"
-                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white/80 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white/80 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-red-100"
               />
             </div>
           )}
@@ -213,7 +213,7 @@ export default function AuthPanel({ onAuthSuccess }: Props) {
               required
               minLength={6}
               placeholder="6文字以上"
-              className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white/80 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-100"
+              className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white/80 px-4 py-3 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-red-100"
             />
           </div>
           <button

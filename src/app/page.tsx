@@ -80,17 +80,19 @@ export default function Home() {
       };
     }
 
-    setIsCheckingPremium(true);
-    setPremiumMessage("プレミアム状態を確認中です...");
+    const loadPremiumStatus = async () => {
+      setPremiumMessage("プレミアム状態を確認中です...");
 
-    supabase
-      .from("user_payments")
-      .select("status")
-      .eq("user_id", session.user.id)
-      .eq("status", "paid")
-      .maybeSingle()
-      .then(({ data, error }) => {
+      try {
+        const { data, error } = await supabase
+          .from("user_payments")
+          .select("status")
+          .eq("user_id", session.user.id)
+          .eq("status", "paid")
+          .maybeSingle();
+
         if (!isMounted) return;
+
         if (error && error.code !== "PGRST116") {
           console.error("Failed to fetch premium status", error);
           setPremiumMessage("プレミアム状態を取得できませんでした。時間をおいて再読み込みしてください。");
@@ -104,12 +106,19 @@ export default function Home() {
           setIsPremium(false);
           setPremiumMessage("");
         }
-      })
-      .finally(() => {
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Failed to fetch premium status", error);
+        setPremiumMessage("プレミアム状態を取得できませんでした。時間をおいて再読み込みしてください。");
+        setIsPremium(false);
+      } finally {
         if (isMounted) {
           setIsCheckingPremium(false);
         }
-      });
+      }
+    };
+
+    void loadPremiumStatus();
 
     return () => {
       isMounted = false;
@@ -155,25 +164,26 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-rose-50/60 text-zinc-900">
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.2),_transparent_55%)]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#041109] text-white">
+      <div className="hero-aurora" />
+      <div className="floating-orb floating-orb--pink" />
+      <div className="floating-orb floating-orb--mint" />
+      <div className="floating-orb floating-orb--gold" />
       {isLoginOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 backdrop-blur-sm">
-          <div className="relative w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-6 backdrop-blur-md">
+          <div className="relative w-full max-w-xl rounded-3xl border border-white/20 bg-gradient-to-br from-white/95 to-rose-50/90 p-6 text-zinc-900 shadow-[0_40px_120px_rgba(0,0,0,0.45)] sm:p-8">
             <button
               type="button"
               onClick={() => setIsLoginOpen(false)}
-              className="absolute right-4 top-4 rounded-full border border-zinc-200 p-2 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500 transition hover:bg-zinc-50"
+              className="absolute right-4 top-4 rounded-full border border-zinc-200/70 p-2 text-xs font-semibold uppercase tracking-[0.3em] text-zinc-500 transition hover:bg-white"
               aria-label="閉じる"
             >
               ✕
             </button>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">
-              Account Access
-            </p>
-            <h2 className="mt-2 text-2xl font-bold text-zinc-900">メールログイン / 新規登録</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.4em] text-rose-500">Account Access</p>
+            <h2 className="mt-2 text-2xl font-bold">メールログイン / 新規登録</h2>
             <p className="mt-2 text-sm text-zinc-600">
-              ユーザー名を登録すると、実績リーダーボードやフッターに表示されます。
+              ユーザー名を登録すると、ランキングやフッターに超可愛いニックネームが表示されます。
             </p>
             <div className="mt-6">
               <AuthPanel onAuthSuccess={() => setIsLoginOpen(false)} />
@@ -181,281 +191,200 @@ export default function Home() {
           </div>
         </div>
       )}
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-10 lg:px-12">
+      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-6 sm:px-10 lg:px-12">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Santa Quest</p>
-          <p className="text-lg font-bold text-zinc-900">Nagoya AR Journey</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.5em] text-rose-200/80">Santa Quest</p>
+          <p className="text-lg font-bold tracking-wide text-white">Nagoya Aurora Parade</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsLoginOpen(true)}
-          className="rounded-full border border-rose-200 bg-white/80 px-6 py-2 text-sm font-semibold text-rose-500 shadow-lg shadow-rose-100 transition hover:bg-rose-50"
-        >
-          ログイン
-        </button>
+        {session ? (
+          <Link href="/game" className="candy-button candy-button--ghost">
+            ゲームへ
+          </Link>
+        ) : (
+          <button type="button" onClick={() => setIsLoginOpen(true)} className="candy-button candy-button--primary">
+            ログイン
+          </button>
+        )}
       </header>
-      <main className="mx-auto flex max-w-6xl flex-col gap-24 px-6 py-16 sm:px-10 lg:px-12">
-        <section className="rounded-3xl bg-gradient-to-br from-rose-100 via-white to-emerald-50 p-10 shadow-xl ring-1 ring-white/60 lg:p-16">
+      <main className="relative z-10 mx-auto flex max-w-6xl flex-col gap-16 px-6 pb-20 pt-10 sm:px-10 lg:px-12">
+        <section className="pixel-panel relative overflow-hidden">
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_60%)]"
+            aria-hidden
+          />
           <div className="grid items-center gap-10 lg:grid-cols-[3fr,2fr]">
             <div className="space-y-6">
-              <p className="inline-flex items-center rounded-full border border-rose-200 bg-white/70 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-rose-500">
-                名古屋限定クリスマスARクエスト
+              <p className="inline-flex items-center rounded-full border border-white/30 bg-white/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.6em] text-rose-100">
+                名古屋限定クリスマスクエスト
               </p>
-              <h1 className="text-4xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-5xl">
-                5スポット制覇でサンタが現れる。
+              <h1 className="text-4xl font-black leading-tight sm:text-5xl">
+                きらめきの街を駆け抜けて
                 <br />
-                街を巡って実績を解放しよう。
+                <span className="text-rose-200">サンタを召喚</span>しよう。
               </h1>
-              <p className="text-lg text-zinc-600">
-                位置情報を元に名古屋の代表スポットをチェックイン。5つ以上の実績を解放すると、Webブラウザでカメラを起動し、ARサンタや限定トナカイとフォト撮影ができます。
+              <p className="text-base text-white/80">
+                キャンディのように愛らしいUIと、ARで踊り出すサンタ＆ピコモモ。スポットごとに3Dカードを集めて、冬のNagoyaをコンプリート！
               </p>
               <div className="flex flex-wrap gap-4">
-                <button
-                  type="button"
-                  onClick={() => setIsLoginOpen(true)}
-                  className="rounded-full bg-rose-500 px-8 py-3 text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
-                >
-                  メールでログイン
-                </button>
-                <a
-                  href="#spots"
-                  className="rounded-full border border-rose-500/50 px-8 py-3 text-rose-500 transition hover:bg-rose-100"
-                >
-                  スポットを見る
+                {session ? (
+                  <Link href="/game" className="candy-button candy-button--primary">
+                    サンタを探しに行く
+                  </Link>
+                ) : (
+                  <button type="button" onClick={() => setIsLoginOpen(true)} className="candy-button candy-button--primary">
+                    メールでログイン
+                  </button>
+                )}
+                <a href="#spots" className="candy-button candy-button--ghost">
+                  スポット一覧
                 </a>
               </div>
             </div>
-            <div className="rounded-2xl bg-white/75 p-6 shadow-lg ring-1 ring-rose-100">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-rose-400">
-                現在の旅の進捗
-              </h2>
-              <p className="mt-4 text-2xl font-semibold text-zinc-900">
-                サンタARまであと <span className="text-rose-500">2 スポット</span>
-              </p>
-              <div className="mt-5 space-y-4">
-                <div>
-                  <div className="flex justify-between text-xs font-semibold text-zinc-500">
-                    <span>名古屋スポット達成率</span>
-                    <span>3 / 5</span>
-                  </div>
-                  <div className="mt-2 h-2 rounded-full bg-rose-100">
-                    <div className="h-full w-3/5 rounded-full bg-rose-500" />
-                  </div>
-                </div>
-                <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm text-emerald-700">
-                  5箇所を超えるとサンタが登場。さらにプレミアム課金でトナカイとの撮影も解放されます。
-                </div>
+            <div className="tilt-stage">
+              <div className="tilt-stage__halo" aria-hidden />
+              <div className="tilt-stage__avatar">
+                <span className="tilt-stage__avatar-face">ʕ•ᴥ•ʔ</span>
+                <p className="text-xs uppercase tracking-[0.4em] text-white/70">Pico Momo</p>
               </div>
+              <div className="tilt-stage__card tilt-stage__card--snow">
+                <p className="text-xs uppercase tracking-[0.6em] text-white/70">Unlocked</p>
+                <p className="text-3xl font-bold">3 / 6</p>
+              </div>
+              <div className="tilt-stage__card tilt-stage__card--gift">
+                <p className="text-xs uppercase tracking-[0.4em] text-white/70">Bonus</p>
+                <p className="text-lg font-semibold text-white">Candy Rain</p>
+              </div>
+              <div className="tilt-stage__stars" aria-hidden />
             </div>
           </div>
-          <div className="mt-12 grid gap-6 sm:grid-cols-3">
+          <div className="mt-10 grid gap-4 sm:grid-cols-3">
             {heroStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-2xl border border-white/70 bg-white/60 p-5 text-center shadow-sm backdrop-blur"
-              >
-                <p className="text-3xl font-bold text-rose-500">{stat.value}</p>
-                <p className="mt-1 text-sm text-zinc-500">{stat.label}</p>
+              <div key={stat.label} className="stat-pillar">
+                <p className="stat-pillar__value">{stat.value}</p>
+                <p className="stat-pillar__label">{stat.label}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="grid gap-10 lg:grid-cols-2" id="spots">
-          <div className="rounded-3xl bg-white/80 p-8 shadow-xl ring-1 ring-rose-100">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-rose-400">
-              Unlock Flow
+        <section className="grid gap-6 lg:grid-cols-[1.6fr,1fr]">
+          <div className="pixel-panel border-l-4 border-white/20 bg-gradient-to-br from-emerald-800/40 via-transparent to-rose-900/20">
+            <p className="text-xs font-semibold uppercase tracking-[0.5em] text-rose-200">Candyverse Premium</p>
+            <h2 className="mt-3 text-3xl font-bold text-white">¥500 でトナカイAR &amp; 限定実績を一気に解放。</h2>
+            <p className="mt-3 text-sm text-white/80">
+              Stripe決済のモックを先行実装。決済後はSupabaseにPremiumタグを付与し、`/game` のAR演出がきらめきMAXに。
             </p>
-            <h2 className="mt-4 text-3xl font-bold text-zinc-900">
-              位置情報でスポットを巡り、<span className="text-rose-500">5つの実績</span>を集めよう。
-            </h2>
-            <ol className="mt-8 space-y-6 text-zinc-700">
-              <li className="flex gap-4">
-                <span className="mt-1 h-8 w-8 rounded-full bg-rose-500 text-center text-lg font-semibold text-white">
-                  1
-                </span>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="bubble-card">
+                <h3>Free</h3>
+                <p className="text-sm text-white/70">ツリーAR / スポット進捗 / メール認証</p>
+              </div>
+              <div className="bubble-card">
+                <h3>Premium</h3>
+                <p className="text-sm text-white/70">サンタ＆トナカイAR / 限定BGM / 優先サポート</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handlePremiumClick}
+              disabled={premiumLoading || isCheckingPremium}
+              className="candy-button candy-button--primary mt-6 w-full justify-center"
+            >
+              {isPremium ? "すぐに /game へ" : premiumLoading ? "決済ページへ遷移中..." : "プレミアムにアップグレード"}
+            </button>
+            {premiumMessage && <p className="mt-3 text-xs text-rose-200">{premiumMessage}</p>}
+          </div>
+          <div className="pixel-panel">
+            <p className="text-xs uppercase tracking-[0.4em] text-white/70">Journey</p>
+            <ol className="mt-4 space-y-4">
+              <li className="timeline-bubble">
+                <span>1</span>
                 <div>
-                  <h3 className="font-semibold">チェックイン</h3>
-                  <p>スポット半径内に入ると自動でチェックイン。UIから達成状況を表示。</p>
+                  <p className="font-semibold text-white">スポット到達</p>
+                  <p className="text-xs text-white/70">GPS 100m圏内で判定。可愛いモーダルが即表示！</p>
                 </div>
               </li>
-              <li className="flex gap-4">
-                <span className="mt-1 h-8 w-8 rounded-full bg-rose-500 text-center text-lg font-semibold text-white">
-                  2
-                </span>
+              <li className="timeline-bubble">
+                <span>2</span>
                 <div>
-                  <h3 className="font-semibold">実績解除</h3>
-                  <p>スポット固有のバッジを獲得し、ギャラリーに保存。5個でカメラUIを解放。</p>
+                  <p className="font-semibold text-white">クラウド保存</p>
+                  <p className="text-xs text-white/70">Supabaseにスタンプ進捗を保存。端末を変えても安心。</p>
                 </div>
               </li>
-              <li className="flex gap-4">
-                <span className="mt-1 h-8 w-8 rounded-full bg-rose-500 text-center text-lg font-semibold text-white">
-                  3
-                </span>
+              <li className="timeline-bubble">
+                <span>3</span>
                 <div>
-                  <h3 className="font-semibold">AR撮影</h3>
-                  <p>無料ユーザーはツリーと、プレミアムはサンタ＆トナカイと撮影できる予定です。</p>
+                  <p className="font-semibold text-white">AR出現</p>
+                  <p className="text-xs text-white/70">5スポット達成でサンタ + プレミアムならトナカイも登場。</p>
                 </div>
               </li>
             </ol>
           </div>
-          <div className="rounded-3xl border border-dashed border-rose-200 bg-white/70 p-8 shadow-inner">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.3em] text-rose-400">
-              Premium Mock
-            </h2>
-            <p className="mt-4 text-3xl font-bold text-zinc-900">
-              500円でプレミアムサンタと<span className="text-rose-500">トナカイAR</span>撮影を解放。
-            </p>
-              <p className="mt-4 text-zinc-600">
-                決済ボタンから外部のチェックアウトページに遷移するUIモックを先に実装。決済完了後にアカウントへ「Premium」タグを付与する設計を想定しています。
-              </p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-zinc-100 bg-white/80 p-6">
-                <h3 className="text-lg font-semibold">Free</h3>
-                <ul className="mt-4 space-y-2 text-sm text-zinc-600">
-                  <li>・ツリーARのみ</li>
-                  <li>・スポット履歴保存</li>
-                  <li>・メール認証</li>
-                </ul>
-                <Link
-                  href="/game"
-                  className="mt-6 inline-flex w-full items-center justify-center rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-500 transition hover:bg-rose-50"
-                >
-                  実績チェックへ
-                </Link>
-              </div>
-              <div id="premium" className="rounded-2xl border border-rose-200 bg-rose-50/70 p-6">
-                <div
-                  className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                    isPremium ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-500"
-                  }`}
-                >
-                  {isPremium ? "ACTIVE" : "COMING SOON"}
-                </div>
-                <h3 className="mt-2 text-lg font-semibold">
-                  {isPremium ? "Premium アクセス中" : "Premium ¥500"}
-                </h3>
-                <ul className="mt-4 space-y-2 text-sm text-zinc-600">
-                  <li>・サンタ＆トナカイAR</li>
-                  <li>・限定実績＆BGM</li>
-                  <li>・優先サポート</li>
-                </ul>
-                <button
-                  type="button"
-                  onClick={handlePremiumClick}
-                  disabled={premiumLoading || isCheckingPremium}
-                  className={`mt-6 w-full rounded-full px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-rose-200 transition ${
-                    isPremium
-                      ? "bg-emerald-600 hover:bg-emerald-700"
-                      : "bg-rose-500 hover:bg-rose-600 disabled:opacity-60"
-                  }`}
-                >
-                  {isPremium
-                    ? "ゲームページへ"
-                    : premiumLoading
-                      ? "決済ページへ遷移中..."
-                      : "プレミアムにアップグレード"}
-                </button>
-                {premiumMessage && (
-                  <p
-                    className={`mt-3 text-xs ${
-                      isPremium ? "text-emerald-600" : "text-rose-500"
-                    }`}
-                  >
-                    {premiumMessage}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
         </section>
 
-        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-rose-100">
+        <section id="spots" className="pixel-panel">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-rose-400">
-                Nagoya Map
-              </p>
-              <h2 className="mt-2 text-3xl font-bold text-zinc-900">街に散らばるスポット実績</h2>
-              <p className="mt-2 text-zinc-600">
-                後続ではバックエンドからスポット情報を取得予定。ひとまずモックデータでカードを表示します。
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.5em] text-rose-200">Nagoya Spots</p>
+              <h2 className="mt-2 text-3xl font-bold text-white">街じゅうに散らばるキャンディースポット</h2>
+              <p className="mt-2 text-sm text-white/70">モックデータでカード化。後続ではSupabaseからの取得を想定。</p>
             </div>
-            <div className="rounded-full border border-rose-200 bg-rose-50/80 px-6 py-3 text-sm font-semibold text-rose-500">
-              GPS精度±50mで判定予定
-            </div>
+            <div className="premium-pill">GPS±50m / 判定100m</div>
           </div>
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
-            {nagoyaSpots.map((spot) => (
-              <article
-                key={spot.name}
-                className="rounded-2xl border border-rose-50 bg-gradient-to-br from-white to-rose-50/60 p-6 shadow-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-zinc-900">{spot.name}</h3>
-                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-600">
-                    {spot.badge}
-                  </span>
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            {nagoyaSpots.map((spot, index) => (
+              <article key={spot.name} className="spot-card">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.5em] text-white/60">#{String(index + 1).padStart(2, "0")}</p>
+                    <h3 className="text-xl font-bold">{spot.name}</h3>
+                  </div>
+                  <span className="spot-card__badge">{spot.badge}</span>
                 </div>
-                <p className="mt-3 text-sm leading-relaxed text-zinc-600">{spot.description}</p>
-                <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-rose-400">
-                  実績ポイント +1
-                </p>
+                <p className="mt-3 text-sm text-white/80">{spot.description}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="grid gap-10 lg:grid-cols-[2fr,1fr]" id="access">
-          <div className="rounded-3xl bg-gradient-to-br from-emerald-50 to-white p-8 shadow-lg ring-1 ring-emerald-100">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-400">
-              Camera Unlock
+        <section className="grid gap-8 lg:grid-cols-[1.4fr,1fr]" id="access">
+          <div className="pixel-panel bg-gradient-to-br from-emerald-900/40 via-transparent to-amber-900/20">
+            <p className="text-xs font-semibold uppercase tracking-[0.5em] text-emerald-200">Camera Unlock</p>
+            <h2 className="mt-3 text-3xl font-bold text-white">ARカメラはPWA風。サンタと一緒に夜景散歩。</h2>
+            <p className="mt-3 text-sm text-white/80">
+              ログイン後はクラウドプロフィールと同期。ブラウザ上でARを起動し、そのままスクショ＆シェアが可能。
             </p>
-            <h2 className="mt-3 text-3xl font-bold text-zinc-900">
-              5箇所以上でサンタARを開放。無料でもツリー撮影OK。
-            </h2>
-            <p className="mt-3 text-zinc-600">
-              ログイン後はクラウド上のプロフィールに実績数を保存。カメラUIはProgressive Web Appとして提供予定です。
-            </p>
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-zinc-100 bg-white/80 p-5">
-                <h3 className="font-semibold text-zinc-800">サンタモード</h3>
-                <p className="mt-1 text-sm text-zinc-600">
-                  サンタ本体とARフォトを撮影。ARKit/ARCore対応ブラウザで動作。
-                </p>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="bubble-card">
+                <h3>サンタモード</h3>
+                <p className="text-xs text-white/70">サンタ本体とARフォト。ARKit/ARCoreブラウザを想定。</p>
               </div>
-              <div className="rounded-2xl border border-zinc-100 bg-white/80 p-5">
-                <h3 className="font-semibold text-zinc-800">トナカイモード</h3>
-                <p className="mt-1 text-sm text-zinc-600">
-                  プレミアム限定。同行するトナカイ、ギフトBOXを配置できる予定。
-                </p>
+              <div className="bubble-card">
+                <h3>トナカイモード</h3>
+                <p className="text-xs text-white/70">Premium限定。ギフトBOXや雪のパーティクルを配置。</p>
               </div>
             </div>
           </div>
-          <div className="rounded-3xl border border-rose-100 bg-white/80 p-8 shadow-lg">
-            <h2 className="text-xl font-semibold text-zinc-900">ログインポータル</h2>
-            <p className="mt-2 text-sm text-zinc-600">
-              メール＋パスワードに加えて、ユーザー名を登録するとスポットランキングに表示されます。
-            </p>
+          <div className="pixel-panel">
+            <h3 className="text-xl font-bold text-white">ログインポータル</h3>
+            <p className="mt-2 text-sm text-white/80">ユーザー名を設定するとランキングに愛称が表示されます。</p>
             <button
               type="button"
               onClick={() => setIsLoginOpen(true)}
-              className="mt-6 w-full rounded-full bg-rose-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-200 transition hover:bg-rose-600"
+              className="candy-button candy-button--primary mt-6 w-full justify-center"
             >
-              ログイン / 新規登録モーダルを開く
+              {session ? "プロフィールを編集" : "ログインモーダルを開く"}
             </button>
-            <p className="mt-3 text-xs text-zinc-500">
-              モーダルからプロフィール名の変更やログアウトも実行できます。
-            </p>
+            <p className="mt-3 text-xs text-white/60">同モーダルからログアウトも可能です。</p>
           </div>
         </section>
 
-        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-rose-100">
+        <section className="pixel-panel">
           <div className="grid gap-8 md:grid-cols-2">
             {faqs.map((faq) => (
-              <div key={faq.q} className="space-y-2">
-                <h3 className="text-lg font-semibold text-zinc-900">{faq.q}</h3>
-                <p className="text-sm text-zinc-600">{faq.a}</p>
+              <div key={faq.q} className="faq-card">
+                <h3>{faq.q}</h3>
+                <p>{faq.a}</p>
               </div>
             ))}
           </div>

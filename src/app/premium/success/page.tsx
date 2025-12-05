@@ -1,14 +1,16 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { useSupabaseSession } from "@/hooks/use-supabase-session";
 
 type Status = "idle" | "processing" | "success" | "error";
 
-export default function PremiumSuccessPage() {
+function PremiumSuccessPageContent() {
   const { session } = useSupabaseSession();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
@@ -62,7 +64,7 @@ export default function PremiumSuccessPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 via-white to-emerald-50 px-4 py-12 text-zinc-900">
-      <div className="mx-auto flex max-w-2xl flex-col gap-6 rounded-3xl bg-white/90 p-8 text-center shadow-2xl ring-1 ring-rose-100">
+      <div className="mx-auto flex max-w-2xl flex-col gap-6 rounded-3xl bg-white/90 p-8 text-center shadow-2xl ring-1 ring-red-100">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-rose-400">Premium Plan</p>
         <h1 className="text-3xl font-bold text-zinc-900">{headline}</h1>
         <p
@@ -100,5 +102,13 @@ export default function PremiumSuccessPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function PremiumSuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading premium status...</div>}>
+      <PremiumSuccessPageContent />
+    </Suspense>
   );
 }
